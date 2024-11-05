@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System;
 
-namespace SdnnGa.Model.Models;
+namespace SdnnGa.Database.Models;
 
 public class BaseModel
 {

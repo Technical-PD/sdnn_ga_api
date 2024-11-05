@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace SdnnGa.Model.Models;
+namespace SdnnGa.Database.Models;
 
 [Table("Sessions")]
 public class DbSession

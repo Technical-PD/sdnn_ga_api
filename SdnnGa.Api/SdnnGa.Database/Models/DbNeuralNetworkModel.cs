@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace SdnnGa.Model.Models;
+namespace SdnnGa.Database.Models;
 
 [Table("NeuralNetworkModel")]
 public class DbNeuralNetworkModel
