@@ -3,10 +3,19 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <UserSecretsId>5aa73cdb-29a1-4959-94cc-789c9cd9bd0c</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SdnnGa.Core\SdnnGa.Core.csproj" />
+    <ProjectReference Include="..\SdnnGa.Database\SdnnGa.Database.csproj" />
+    <ProjectReference Include="..\SdnnGa.Infrastructure\SdnnGa.Infrastructure.csproj" />
+    <ProjectReference Include="..\SdnnGa.Model\SdnnGa.Model.csproj" />
+    <ProjectReference Include="..\SdnnGa.Services\SdnnGa.Services.csproj" />
   </ItemGroup>
 
 </Project>

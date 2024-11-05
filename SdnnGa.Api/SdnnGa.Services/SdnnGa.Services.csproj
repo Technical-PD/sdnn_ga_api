@@ -4,4 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SdnnGa.Model\SdnnGa.Model.csproj" />
+  </ItemGroup>
+
 </Project>
