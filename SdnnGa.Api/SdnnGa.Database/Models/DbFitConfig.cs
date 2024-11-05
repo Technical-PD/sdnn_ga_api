@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace SdnnGa.Database.Models;
 
 [Table("FitConfigs")]
-public class FitConfig
+public class DbFitConfig : BaseModel
 {
     [Required]
     public int MaxEpoches { get; set; }

@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace SdnnGa.Database.Models;
 
 [Table("GeneticConfigs")]
-public class DbGeneticConfig
+public class DbGeneticConfig : BaseModel
 {
     [Required]
     public int MaxEpoches { get; set; }

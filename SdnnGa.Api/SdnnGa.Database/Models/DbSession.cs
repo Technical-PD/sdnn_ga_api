@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 namespace SdnnGa.Database.Models;
 
 [Table("Sessions")]
-public class DbSession
+public class DbSession : BaseModel
 {
     [MaxLength(256)]
     public string Description { get; set; }
@@ -16,5 +16,5 @@ public class DbSession
 
     public DbGeneticConfig GeneticConfig { get; set; }
 
-    public FitConfig FitConfig { get; set; }
+    public DbFitConfig FitConfig { get; set; }
 }

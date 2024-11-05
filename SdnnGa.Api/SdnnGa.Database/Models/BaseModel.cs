@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
-using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SdnnGa.Database.Models;
 
@@ -12,12 +12,12 @@ public class BaseModel
 
     [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    [Column(TypeName = "datetime")]
+    [Column(TypeName = "timestamp")]
     public DateTime RecCreated { get; set; }
 
     [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-    [Column(TypeName = "datetime")]
+    [Column(TypeName = "timestamp")]
     public DateTime RecModified { get; set; }
 
     [Required]

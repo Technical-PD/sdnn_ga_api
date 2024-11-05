@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace SdnnGa.Database.Models;
 
 [Table("NeuralNetworkModel")]
-public class DbNeuralNetworkModel
+public class DbNeuralNetworkModel : BaseModel
 {
     [Required]
     public bool IsTrained { get; set; }
