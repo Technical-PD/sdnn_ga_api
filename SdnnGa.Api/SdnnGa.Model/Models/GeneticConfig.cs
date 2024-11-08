@@ -1,4 +1,6 @@
-﻿namespace SdnnGa.Model.Models;
+﻿using SdnnGa.Model.Database.Models;
+
+namespace SdnnGa.Model.Models;
 
 public class GeneticConfig : BaseModel
 {

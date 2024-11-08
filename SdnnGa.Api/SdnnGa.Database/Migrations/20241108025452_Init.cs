@@ -17,8 +17,8 @@ namespace SdnnGa.Database.Migrations
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    RecCreated = table.Column<DateTime>(type: "timestamp", nullable: false),
-                    RecModified = table.Column<DateTime>(type: "timestamp", nullable: false),
+                    RecCreated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    RecModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Name = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
                 },
                 constraints: table =>
@@ -35,8 +35,8 @@ namespace SdnnGa.Database.Migrations
                     IsTrained = table.Column<bool>(type: "boolean", nullable: false),
                     EpochNo = table.Column<int>(type: "integer", nullable: false),
                     SessionId = table.Column<string>(type: "text", nullable: false),
-                    RecCreated = table.Column<DateTime>(type: "timestamp", nullable: false),
-                    RecModified = table.Column<DateTime>(type: "timestamp", nullable: false),
+                    RecCreated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    RecModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Name = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
                 },
                 constraints: table =>
@@ -63,8 +63,8 @@ namespace SdnnGa.Database.Migrations
                     XDataFileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     YDataFileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     SessionId = table.Column<string>(type: "text", nullable: false),
-                    RecCreated = table.Column<DateTime>(type: "timestamp", nullable: false),
-                    RecModified = table.Column<DateTime>(type: "timestamp", nullable: false),
+                    RecCreated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    RecModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Name = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
                 },
                 constraints: table =>
@@ -86,8 +86,8 @@ namespace SdnnGa.Database.Migrations
                     MaxEpoches = table.Column<int>(type: "integer", nullable: false),
                     MutationCof = table.Column<float>(type: "real", nullable: false),
                     SessionId = table.Column<string>(type: "text", nullable: false),
-                    RecCreated = table.Column<DateTime>(type: "timestamp", nullable: false),
-                    RecModified = table.Column<DateTime>(type: "timestamp", nullable: false),
+                    RecCreated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    RecModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Name = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
                 },
                 constraints: table =>
@@ -115,8 +115,8 @@ namespace SdnnGa.Database.Migrations
                     AccuracyValue = table.Column<float>(type: "real", nullable: false),
                     SessionId = table.Column<string>(type: "text", nullable: false),
                     EpocheId = table.Column<string>(type: "text", nullable: false),
-                    RecCreated = table.Column<DateTime>(type: "timestamp", nullable: false),
-                    RecModified = table.Column<DateTime>(type: "timestamp", nullable: false),
+                    RecCreated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    RecModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Name = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
                 },
                 constraints: table =>

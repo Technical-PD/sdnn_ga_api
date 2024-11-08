@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SdnnGa.Model.Database.Models;
+using System.Collections.Generic;
 
 namespace SdnnGa.Model.Models;
 

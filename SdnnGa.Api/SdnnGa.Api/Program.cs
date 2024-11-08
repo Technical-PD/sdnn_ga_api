@@ -4,6 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SdnnGa.Database;
+using SdnnGa.Database.Models;
+using SdnnGa.Database.Repository;
+using SdnnGa.Model.Database.Interfaces.Repository;
+using SdnnGa.Model.Services;
+using SdnnGa.Services.SessionService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +24,14 @@ var connectionString = builder.Configuration.GetConnectionString("PostgresConnec
 
 builder.Services.AddDbContext<ApiDbContext>(options =>
     options.UseNpgsql(connectionString));
+
+builder.Services.AddScoped<IDbRepository<DbSession>, DbRepository<DbSession>>();
+builder.Services.AddScoped<IDbRepository<DbFitConfig>, DbRepository<DbFitConfig>>();
+builder.Services.AddScoped<IDbRepository<DbGeneticConfig>, DbRepository<DbGeneticConfig>>();
+builder.Services.AddScoped<IDbRepository<DbNeuralNetworkModel>, DbRepository<DbNeuralNetworkModel>>();
+builder.Services.AddScoped<IDbRepository<DbEpoch>, DbRepository<DbEpoch>>();
+
+builder.Services.AddScoped<ISessionService, SessionService>();
 
 var app = builder.Build();
 

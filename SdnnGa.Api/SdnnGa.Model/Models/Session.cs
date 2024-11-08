@@ -1,13 +1,10 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using SdnnGa.Model.Database.Models;
+using System.Collections.Generic;
 
-namespace SdnnGa.Database.Models;
+namespace SdnnGa.Model.Models;
 
-[Table("Sessions")]
 public class Session : BaseModel
 {
-    [MaxLength(256)]
     public string Description { get; set; }
 
     public ICollection<NeuralNetworkModel> NeuralNetworkModels { get; set; }

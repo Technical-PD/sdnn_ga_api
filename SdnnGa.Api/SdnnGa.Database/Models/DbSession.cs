@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using SdnnGa.Model.Database.Models;
 
 namespace SdnnGa.Database.Models;
 

@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace SdnnGa.Database.Models;
+namespace SdnnGa.Model.Database.Models;
 
 public class BaseModel
 {
@@ -11,13 +11,11 @@ public class BaseModel
     public string Id { get; set; }
 
     [Required]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    [Column(TypeName = "timestamp")]
+    [Column(TypeName = "timestamp with time zone")]
     public DateTime RecCreated { get; set; }
 
     [Required]
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-    [Column(TypeName = "timestamp")]
+    [Column(TypeName = "timestamp with time zone")]
     public DateTime RecModified { get; set; }
 
     [Required]

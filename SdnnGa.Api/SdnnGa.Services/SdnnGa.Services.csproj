@@ -5,11 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SdnnGa.Database\SdnnGa.Database.csproj" />
     <ProjectReference Include="..\SdnnGa.Model\SdnnGa.Model.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="SessionService\" />
   </ItemGroup>
 
 </Project>

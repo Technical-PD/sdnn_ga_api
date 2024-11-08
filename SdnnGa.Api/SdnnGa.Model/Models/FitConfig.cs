@@ -1,6 +1,8 @@
-﻿namespace SdnnGa.Model.Models;
+﻿using SdnnGa.Model.Database.Models;
 
-public class DbFitConfig 
+namespace SdnnGa.Model.Models;
+
+public class DbFitConfig : BaseModel
 {
     public int MaxEpoches { get; set; }
 

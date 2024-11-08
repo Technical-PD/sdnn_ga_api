@@ -1,38 +1,25 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using SdnnGa.Model.Database.Models;
 
-namespace SdnnGa.Database.Models;
+namespace SdnnGa.Model.Models;
 
-[Table("NeuralNetworkModel")]
 public class NeuralNetworkModel : BaseModel
 {
-    [Required]
     public bool IsTrained { get; set; }
 
-    [MaxLength(255)]
     public string WeightsFileName { get; set; }
 
-    [MaxLength(255)]
     public string ModelConfigFileName { get; set; }
 
-    [Required]
     public int Type { get; set; }
 
-    [Required]
     public int[] Metric { get; set; }
 
-    [Required]
     public int LossValue { get; set; }
 
-    [Required]
     public float AccuracyValue { get; set; }
 
-    [Required]
-    [ForeignKey("Session")]
     public string SessionId { get; set; }
 
-    [Required]
-    [ForeignKey("Epoch")]
     public string EpocheId { get; set; }
 
     public Session Session { get; set; }

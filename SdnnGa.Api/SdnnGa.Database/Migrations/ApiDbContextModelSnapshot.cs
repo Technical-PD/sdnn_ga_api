@@ -42,12 +42,10 @@ namespace SdnnGa.Database.Migrations
                         .HasColumnType("character varying(64)");
 
                     b.Property<DateTime>("RecCreated")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("RecModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SessionId")
                         .IsRequired()
@@ -87,12 +85,10 @@ namespace SdnnGa.Database.Migrations
                         .HasColumnType("character varying(64)");
 
                     b.Property<DateTime>("RecCreated")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("RecModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SessionId")
                         .IsRequired()
@@ -131,12 +127,10 @@ namespace SdnnGa.Database.Migrations
                         .HasColumnType("character varying(64)");
 
                     b.Property<DateTime>("RecCreated")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("RecModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SessionId")
                         .IsRequired()
@@ -182,12 +176,10 @@ namespace SdnnGa.Database.Migrations
                         .HasColumnType("character varying(64)");
 
                     b.Property<DateTime>("RecCreated")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("RecModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SessionId")
                         .IsRequired()
@@ -224,12 +216,10 @@ namespace SdnnGa.Database.Migrations
                         .HasColumnType("character varying(64)");
 
                     b.Property<DateTime>("RecCreated")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("RecModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SdnnGa.Model.Database.Interfaces.Repository;
-using SdnnGa.Model.Models;
+using SdnnGa.Model.Database.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading;
