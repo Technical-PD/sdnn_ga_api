@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SdnnGa.Model.Database.Interfaces.Repository;
+using SdnnGa.Model.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SdnnGa.Database.Repository;
 
-public class DbRepository<T> : IDbRepository<T> where T : class
+public class DbRepository<T> : IDbRepository<T> where T : BaseModel
 {
     private readonly ApiDbContext _context;
     private readonly DbSet<T> _dbSet;
@@ -67,6 +68,10 @@ public class DbRepository<T> : IDbRepository<T> where T : class
 
         try
         {
+            entity.Id = Guid.NewGuid().ToString();
+            entity.RecCreated = DateTime.UtcNow;
+            entity.RecModified = DateTime.UtcNow;
+
             await _dbSet.AddAsync(entity, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }
@@ -92,6 +97,8 @@ public class DbRepository<T> : IDbRepository<T> where T : class
 
         try
         {
+            entity.RecModified = DateTime.UtcNow;
+
             _dbSet.Update(entity);
             await _context.SaveChangesAsync(cancellationToken);
         }
