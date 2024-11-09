@@ -13,5 +13,5 @@ public class Session : BaseModel
 
     public GeneticConfig GeneticConfig { get; set; }
 
-    public DbFitConfig FitConfig { get; set; }
+    public FitConfig FitConfig { get; set; }
 }

@@ -8,6 +8,7 @@ using SdnnGa.Database.Models;
 using SdnnGa.Database.Repository;
 using SdnnGa.Model.Database.Interfaces.Repository;
 using SdnnGa.Model.Services;
+using SdnnGa.Services.AutoMapper;
 using SdnnGa.Services.SessionService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,9 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// AutoMapper
+builder.Services.AddAutoMapper(typeof(DtoProfile));
 
 // DbContext
 var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");

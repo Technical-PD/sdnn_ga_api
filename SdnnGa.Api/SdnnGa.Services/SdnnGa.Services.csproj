@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SdnnGa.Database\SdnnGa.Database.csproj" />
     <ProjectReference Include="..\SdnnGa.Model\SdnnGa.Model.csproj" />
   </ItemGroup>

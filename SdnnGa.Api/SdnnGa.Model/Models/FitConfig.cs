@@ -2,7 +2,7 @@
 
 namespace SdnnGa.Model.Models;
 
-public class DbFitConfig : BaseModel
+public class FitConfig : BaseModel
 {
     public int MaxEpoches { get; set; }
 

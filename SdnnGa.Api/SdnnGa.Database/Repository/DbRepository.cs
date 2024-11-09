@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SdnnGa.Model.Database.Interfaces.Repository;
 using SdnnGa.Model.Database.Models;
-using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
+using System;
 
 namespace SdnnGa.Database.Repository;
 
@@ -25,23 +26,24 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
         {
             return await _dbSet.ToListAsync(cancellationToken);
         }
-        catch (OperationCanceledException)
+        catch (Exception)
         {
-            Console.WriteLine("Operation was canceled in GetAllAsync.");
-            return new List<T>();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in GetAllAsync: {ex.Message}");
-            return new List<T>();
+            throw;
         }
     }
 
-    public async Task<T> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<T> GetByIdAsync(string id, Func<IQueryable<T>, IQueryable<T>> include = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            var entity = await _dbSet.FindAsync(new object[] { id }, cancellationToken);
+            IQueryable<T> query = _dbSet;
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            var entity = await query.FirstOrDefaultAsync(e => EF.Property<string>(e, "Id") == id, cancellationToken);
 
             if (entity == null)
             {
@@ -50,15 +52,9 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
 
             return entity;
         }
-        catch (OperationCanceledException)
+        catch (Exception)
         {
-            Console.WriteLine("Operation was canceled in GetByIdAsync.");
-            return null;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in GetByIdAsync: {ex.Message}");
-            return null;
+            throw;
         }
     }
 
@@ -75,17 +71,9 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
             await _dbSet.AddAsync(entity, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }
-        catch (OperationCanceledException)
+        catch (Exception)
         {
-            Console.WriteLine("Operation was canceled in AddAsync.");
-        }
-        catch (DbUpdateException dbEx)
-        {
-            Console.WriteLine($"Database update error in AddAsync: {dbEx.Message}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in AddAsync: {ex.Message}");
+            throw;
         }
 
         return entity;
@@ -102,17 +90,9 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
             _dbSet.Update(entity);
             await _context.SaveChangesAsync(cancellationToken);
         }
-        catch (OperationCanceledException)
+        catch (Exception)
         {
-            Console.WriteLine("Operation was canceled in UpdateAsync.");
-        }
-        catch (DbUpdateException dbEx)
-        {
-            Console.WriteLine($"Database update error in UpdateAsync: {dbEx.Message}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in UpdateAsync: {ex.Message}");
+            throw;
         }
 
         return entity;
@@ -124,7 +104,7 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
 
         try
         {
-            entity = await GetByIdAsync(id, cancellationToken);
+            entity = await GetByIdAsync(id, null, cancellationToken);
 
             if (entity == null)
             {
@@ -134,17 +114,9 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
             _dbSet.Remove(entity);
             await _context.SaveChangesAsync(cancellationToken);
         }
-        catch (OperationCanceledException)
+        catch (Exception)
         {
-            Console.WriteLine("Operation was canceled in DeleteAsync.");
-        }
-        catch (DbUpdateException dbEx)
-        {
-            Console.WriteLine($"Database update error in DeleteAsync: {dbEx.Message}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in DeleteAsync: {ex.Message}");
+            throw;
         }
 
         return entity;
