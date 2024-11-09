@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sdnnga-api-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: sdnnga-api
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

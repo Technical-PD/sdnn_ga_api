@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sdnnga-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sdnnga-api
+  template:
+    metadata:
+      labels:
+        app: sdnnga-api
+    spec:
+      containers:
+        - name: sdnnga-api
+          image: smemo/sdnnga-api:latest # Використання Docker Hub образу
+          ports:
+            - containerPort: 80
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              value: "Host=postgres-service;Database=SdnnGa;Username=postgres;Password=postgres"
