@@ -6,7 +6,9 @@ using Microsoft.Extensions.Hosting;
 using SdnnGa.Database;
 using SdnnGa.Database.Models;
 using SdnnGa.Database.Repository;
+using SdnnGa.Infrastructure.RebbitMq;
 using SdnnGa.Model.Database.Interfaces.Repository;
+using SdnnGa.Model.Infrastructure.Interfaces;
 using SdnnGa.Model.Services;
 using SdnnGa.Services.AutoMapper;
 using SdnnGa.Services.SessionService;
@@ -23,12 +25,16 @@ builder.Services.AddSwaggerGen();
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(DtoProfile));
 
+// RebbitMQ
+builder.Services.AddScoped<IRebbitMqClient, RebbitMqClient>(provider => new RebbitMqClient("rabbitmq-service", "request_queue", "response_queue"));
+
 // DbContext
 var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
 
 builder.Services.AddDbContext<ApiDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+// DbRepository
 builder.Services.AddScoped<IDbRepository<DbSession>, DbRepository<DbSession>>();
 builder.Services.AddScoped<IDbRepository<DbFitConfig>, DbRepository<DbFitConfig>>();
 builder.Services.AddScoped<IDbRepository<DbGeneticConfig>, DbRepository<DbGeneticConfig>>();

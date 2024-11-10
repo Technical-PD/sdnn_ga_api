@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: createmodel-module
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: createmodel-module
+  template:
+    metadata:
+      labels:
+        app: createmodel-module
+    spec:
+      containers:
+        - name: createmodel-module
+          image: smemo/sdnnga-createmodel-module:latest
+          env:
+            - name: RABBITMQ_HOST
+              value: "rabbitmq-service"
