@@ -14,7 +14,9 @@ public class NeuralNetworkModel : BaseModel
 
     public int[] Metric { get; set; }
 
-    public int LossValue { get; set; }
+    public int Loss { get; set; }
+
+    public float LossValue { get; set; }
 
     public float AccuracyValue { get; set; }
 

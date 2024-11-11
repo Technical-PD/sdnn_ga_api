@@ -1,14 +1,14 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using SdnnGa.Model.Infrastructure.Interfaces;
+using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
 using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SdnnGa.Infrastructure.RebbitMq;
+namespace SdnnGa.Infrastructure.RabbitMq;
 
-public class RebbitMqClient : IRebbitMqClient
+public class RabbitMqClient : IRabbitMqClient
 {
     private readonly string _hostname;
     private readonly string _requestQueue;
@@ -17,7 +17,7 @@ public class RebbitMqClient : IRebbitMqClient
     private IConnection _connection;
     private IModel _channel;
 
-    public RebbitMqClient(string hostname, string requestQueue, string responseQueue)
+    public RabbitMqClient(string hostname, string requestQueue, string responseQueue)
     {
         _hostname = hostname;
         _requestQueue = requestQueue;

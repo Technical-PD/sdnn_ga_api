@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace SdnnGa.Model.Infrastructure.Interfaces;
+namespace SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
 
-public interface IRebbitMqClient
+public interface IRabbitMqClient
 {
     Task<string> SendMessageAsync(string message);
     void Close();

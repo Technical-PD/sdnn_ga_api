@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SdnnGa.Model.Infrastructure.Interfaces;
 using System.Threading.Tasks;
 using System.Threading;
+using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
 
 namespace SdnnGa.Api.Controllers.V1
 {
@@ -10,9 +10,9 @@ namespace SdnnGa.Api.Controllers.V1
     [ApiController]
     public class NeuralNetworkModelController : ControllerBase
     {
-        private readonly IRebbitMqClient _rebbitMqClient;
+        private readonly IRabbitMqClient _rebbitMqClient;
 
-        public NeuralNetworkModelController(IRebbitMqClient rebbitMqClient)
+        public NeuralNetworkModelController(IRabbitMqClient rebbitMqClient)
         {
             _rebbitMqClient = rebbitMqClient;
         }

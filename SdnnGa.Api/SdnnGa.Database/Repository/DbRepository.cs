@@ -32,6 +32,32 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
         }
     }
 
+    public async Task<IEnumerable<T>> GetByFieldAsync(string fieldName, string fieldValue, Func<IQueryable<T>, IQueryable<T>> include = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            IQueryable<T> query = _dbSet;
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            var entities = await query.Where(e => EF.Property<string>(e, fieldName) == fieldValue).ToListAsync();
+
+            if (entities == null)
+            {
+                throw new KeyNotFoundException($"Entity with field {fieldName} which has value {fieldValue} not found.");
+            }
+
+            return entities;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
     public async Task<T> GetByIdAsync(string id, Func<IQueryable<T>, IQueryable<T>> include = null, CancellationToken cancellationToken = default)
     {
         try

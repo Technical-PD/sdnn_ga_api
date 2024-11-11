@@ -1,5 +1,5 @@
-# Використовуємо офіційний образ Python 3.11
-FROM python:3.11-slim
+# Використовуємо офіційний образ Python 3.12
+FROM python:3.12-slim
 
 # Встановлюємо оновлення системи та необхідні пакети
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -14,6 +14,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Встановлюємо залежності з requirements.txt
+RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копіюємо інші файли до контейнера

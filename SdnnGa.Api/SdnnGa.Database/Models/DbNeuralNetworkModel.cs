@@ -16,16 +16,14 @@ public class DbNeuralNetworkModel : BaseModel
     [MaxLength(255)]
     public string ModelConfigFileName { get; set; }
 
-    [Required]
     public int Type { get; set; }
 
-    [Required]
     public int[] Metric { get; set; }
 
-    [Required]
-    public int LossValue { get; set; }
+    public int Loss { get; set; }
 
-    [Required]
+    public float LossValue { get; set; }
+
     public float AccuracyValue { get; set; }
 
     [Required]
