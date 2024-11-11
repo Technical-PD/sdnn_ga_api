@@ -15,7 +15,7 @@ public class JobScheduler : IJobScheduler
         _scheduler = scheduler;
     }
 
-    public async Task ScheduleJob<T>(string jobTypeName, Dictionary<string, string> jobSettings) where T : IJob
+    public async Task ScheduleJobAsync<T>(string jobTypeName, Dictionary<string, string> jobSettings) where T : IJob
     {
         // Створюємо JobDataMap та додаємо в нього необхідні параметри
         var jobDataMap = new JobDataMap();

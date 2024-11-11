@@ -3,6 +3,30 @@ import json
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input
 
+def generate_model(model_config_json):
+    # Ініціалізація моделі
+    model = Sequential()
+
+    # Додавання вхідного шару
+    model.add(Input(shape=model_config_json['InputShape'], name="input"))
+
+    # Додавання внутрішніх шарів
+    for layer_config in model_config_json['InternalLayers']:
+        model.add(Dense(units=layer_config['NeuronsCount'],
+                        use_bias=layer_config['UseBias'],
+                        activation=layer_config['ActivationFunc']))
+
+    # Додавання вихідного шару
+    output_layer = model_config_json['OutputLayer']
+    model.add(Dense(units=output_layer['NeuronsCount'],
+                    use_bias=output_layer['UseBias'],
+                    activation=output_layer['ActivationFunc']))
+
+    # Конвертація моделі в JSON формат
+    json_model = model.to_json()
+
+    return json_model
+
 def process_message(message):
     # Тут обробка повідомлення (просто повернемо те ж повідомлення у відповідь)
     return message
@@ -39,29 +63,3 @@ def on_request(ch, method, properties, body):
 channel.basic_consume(queue=request_queue, on_message_callback=on_request)
 print(" [*] Waiting for messages.")
 channel.start_consuming()
-
-
-
-def generate_model(model_config_json):
-    # Ініціалізація моделі
-    model = Sequential()
-
-    # Додавання вхідного шару
-    model.add(Input(shape=model_config_json['InputShape'], name="input"))
-
-    # Додавання внутрішніх шарів
-    for layer_config in model_config_json['InternalLayers']:
-        model.add(Dense(units=layer_config['NeuronsCount'],
-                        use_bias=layer_config['UseBias'],
-                        activation=layer_config['ActivationFunc']))
-
-    # Додавання вихідного шару
-    output_layer = model_config_json['OutputLayer']
-    model.add(Dense(units=output_layer['NeuronsCount'],
-                    use_bias=output_layer['UseBias'],
-                    activation=output_layer['ActivationFunc']))
-
-    # Конвертація моделі в JSON формат
-    json_model = model.to_json()
-
-    return json_model

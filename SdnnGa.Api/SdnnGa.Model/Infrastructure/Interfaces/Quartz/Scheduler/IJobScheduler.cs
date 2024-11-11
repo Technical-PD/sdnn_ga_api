@@ -6,5 +6,5 @@ namespace SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
 
 public interface IJobScheduler
 {
-    Task ScheduleJob<T>(string jobTypeName, Dictionary<string, string> jobSettings) where T : IJob;
+    Task ScheduleJobAsync<T>(string jobTypeName, Dictionary<string, string> jobSettings) where T : IJob;
 }
