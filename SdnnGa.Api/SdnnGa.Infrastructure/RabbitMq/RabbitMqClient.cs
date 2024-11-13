@@ -3,7 +3,6 @@ using RabbitMQ.Client.Events;
 using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
 using System;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace SdnnGa.Infrastructure.RabbitMq;
@@ -22,7 +21,7 @@ public class RabbitMqClient : IRabbitMqClient
         _hostname = hostname;
         _requestQueue = requestQueue;
         _responseQueue = responseQueue;
-        _factory = new ConnectionFactory() { HostName = _hostname }; // Згідно з документацією, можна додати й інші властивості, такі як UserName, Password тощо.
+        _factory = new ConnectionFactory() { HostName = _hostname };
         InitializeConnection();
     }
 
@@ -35,7 +34,7 @@ public class RabbitMqClient : IRabbitMqClient
         _channel.QueueDeclare(queue: _responseQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
     }
 
-    public async Task<string> SendMessageAsync(string message)
+    public async Task<string> SendMessageAsync(string message, int timeoutInSecconds = 10)
     {
         if (_channel == null)
         {
@@ -71,18 +70,12 @@ public class RabbitMqClient : IRabbitMqClient
 
         try
         {
-            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
-            {
-                var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(-1, cts.Token));
-                if (completedTask == tcs.Task)
-                {
-                    return await tcs.Task;
-                }
-                else
-                {
-                    throw new TimeoutException("The response was not received within the expected time frame.");
-                }
-            }
+            return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(timeoutInSecconds));
+        }
+        catch (TimeoutException)
+        {
+            Console.WriteLine($"[x] Error: The response was not received within the expected time frame. Timeout: {timeoutInSecconds}");
+            throw;
         }
         catch (Exception ex)
         {

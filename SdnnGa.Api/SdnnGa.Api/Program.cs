@@ -17,6 +17,9 @@ using SdnnGa.Model.Services;
 using SdnnGa.Services.AutoMapper;
 using SdnnGa.Services.Service;
 using SdnnGa.Services.SessionService;
+using SdnnGa.Model.Core.Interfaces;
+using SdnnGa.Core.Classes;
+using SdnnGa.Core.Jobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +38,7 @@ builder.Services.AddSingleton(configuration);
 builder.Services.AddAutoMapper(typeof(DtoProfile));
 
 // RebbitMQ
-builder.Services.AddScoped<IRabbitMqClient, RabbitMqClient>(provider => new RabbitMqClient("rabbitmq-service", "request_queue", "response_queue"));
+builder.Services.AddTransient<IRabbitMqClient, RabbitMqClient>(provider => new RabbitMqClient("rabbitmq-service", "request_queue", "response_queue"));
 
 // Blob Storage
 builder.Services.AddScoped<IAzureBlobProvider, AzureBlobProvider>();
@@ -72,6 +75,13 @@ builder.Services.AddScoped<IDbRepository<DbEpoch>, DbRepository<DbEpoch>>();
 // Services
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IEpochService, EpochService>();
+builder.Services.AddScoped<IGeneticService, GeneticService>();
+builder.Services.AddScoped<INeuralNetworkModelService, NeuralNetworkModelService>();
+
+// Core
+builder.Services.AddScoped<IModelGenerator, ModelGenerator>();
+
+builder.Services.AddScoped<ICreateModelJob, CreateModelJob>();
 
 var app = builder.Build();
 
