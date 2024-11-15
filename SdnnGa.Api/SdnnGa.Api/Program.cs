@@ -72,6 +72,7 @@ builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IEpochService, EpochService>();
 builder.Services.AddScoped<IGeneticService, GeneticService>();
 builder.Services.AddScoped<INeuralNetworkModelService, NeuralNetworkModelService>();
+builder.Services.AddScoped<IDataService, DataService>();
 
 // Core
 builder.Services.AddScoped<IModelGenerator, ModelGenerator>();
