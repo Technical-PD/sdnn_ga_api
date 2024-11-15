@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fitmodel-module
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fitmodel-module
+  template:
+    metadata:
+      labels:
+        app: fitmodel-module
+    spec:
+      containers:
+        - name: fitmodel-module
+          image: smemo/sdnnga-fitmodel-module:latest
+          env:
+            - name: RABBITMQ_HOST
+              value: "rabbitmq-service"
