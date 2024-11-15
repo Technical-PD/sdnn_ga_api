@@ -8,15 +8,17 @@ namespace SdnnGa.Infrastructure.Quartz.Scheduler;
 
 public class JobScheduler : IJobScheduler
 {
-    private readonly IScheduler _scheduler;
+    private readonly ISchedulerService _schedulerService;
 
-    public JobScheduler(IScheduler scheduler)
+    public JobScheduler(ISchedulerService schedulerService)
     {
-        _scheduler = scheduler;
+        _schedulerService = schedulerService;
     }
 
     public async Task ScheduleJobAsync<T>(string jobTypeName, Dictionary<string, string> jobSettings) where T : IJob
     {
+        var scheduler = await _schedulerService.GetSchedulerAsync();
+
         // Створюємо JobDataMap та додаємо в нього необхідні параметри
         var jobDataMap = new JobDataMap();
 
@@ -38,6 +40,6 @@ public class JobScheduler : IJobScheduler
             .Build();
 
         // Запланувати Job з тригером
-        await _scheduler.ScheduleJob(job, trigger);
+        await scheduler.ScheduleJob(job, trigger);
     }
 }

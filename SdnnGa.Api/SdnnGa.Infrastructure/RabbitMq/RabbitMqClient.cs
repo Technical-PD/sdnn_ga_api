@@ -2,6 +2,7 @@
 using RabbitMQ.Client.Events;
 using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
 using System;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,12 +17,16 @@ public class RabbitMqClient : IRabbitMqClient
     private IConnection _connection;
     private IModel _channel;
 
+    // Словник для зберігання очікуваних відповідей за correlationId
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<string>> _pendingResponses;
+
     public RabbitMqClient(string hostname, string requestQueue, string responseQueue)
     {
         _hostname = hostname;
         _requestQueue = requestQueue;
         _responseQueue = responseQueue;
         _factory = new ConnectionFactory() { HostName = _hostname };
+        _pendingResponses = new ConcurrentDictionary<string, TaskCompletionSource<string>>();
         InitializeConnection();
     }
 
@@ -30,11 +35,33 @@ public class RabbitMqClient : IRabbitMqClient
         _connection = _factory.CreateConnection();
         _channel = _connection.CreateModel();
 
-        _channel.QueueDeclare(queue: _requestQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
-        _channel.QueueDeclare(queue: _responseQueue, durable: false, exclusive: false, autoDelete: false, arguments: null);
+        // Налаштування черг як durable для стійкості повідомлень
+        _channel.QueueDeclare(queue: _requestQueue, durable: true, exclusive: false, autoDelete: false, arguments: null);
+        _channel.QueueDeclare(queue: _responseQueue, durable: true, exclusive: false, autoDelete: false, arguments: null);
+
+        // Ініціалізація споживача для отримання відповідей
+        InitializeConsumer();
     }
 
-    public async Task<string> SendMessageAsync(string message, int timeoutInSecconds = 10)
+    private void InitializeConsumer()
+    {
+        var consumer = new EventingBasicConsumer(_channel);
+        consumer.Received += (model, ea) =>
+        {
+            var correlationId = ea.BasicProperties.CorrelationId;
+            if (_pendingResponses.TryRemove(correlationId, out var tcs))
+            {
+                var response = Encoding.UTF8.GetString(ea.Body.ToArray());
+                Console.WriteLine($"[x] Received response: {response}");
+                tcs.TrySetResult(response);
+            }
+        };
+
+        // Реєстрація споживача один раз для уникнення дублювання
+        _channel.BasicConsume(queue: _responseQueue, autoAck: true, consumer: consumer);
+    }
+
+    public async Task<string> SendMessageAsync(string message, int timeoutInSeconds = 10)
     {
         if (_channel == null)
         {
@@ -49,20 +76,8 @@ public class RabbitMqClient : IRabbitMqClient
 
         var tcs = new TaskCompletionSource<string>();
 
-        var consumer = new EventingBasicConsumer(_channel);
-        consumer.Received += (model, ea) =>
-        {
-            if (ea.BasicProperties.CorrelationId == correlationId)
-            {
-                var responseBody = ea.Body.ToArray();
-                var response = Encoding.UTF8.GetString(responseBody);
-                Console.WriteLine($"[x] Received response: {response}");
-                tcs.TrySetResult(response);
-            }
-        };
-
-        // Споживач повинен бути зареєстрований на початку для коректної обробки повідомлень, згідно з рекомендаціями документації
-        _channel.BasicConsume(queue: _responseQueue, autoAck: true, consumer: consumer);
+        // Збереження TaskCompletionSource для очікування відповіді з правильним correlationId
+        _pendingResponses[correlationId] = tcs;
 
         // Публікація повідомлення в чергу
         _channel.BasicPublish(exchange: "", routingKey: _requestQueue, basicProperties: props, body: body);
@@ -70,16 +85,19 @@ public class RabbitMqClient : IRabbitMqClient
 
         try
         {
-            return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(timeoutInSecconds));
+            // Очікування відповіді з таймаутом
+            return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(timeoutInSeconds));
         }
         catch (TimeoutException)
         {
-            Console.WriteLine($"[x] Error: The response was not received within the expected time frame. Timeout: {timeoutInSecconds}");
+            Console.WriteLine($"[x] Error: The response was not received within the expected time frame. Timeout: {timeoutInSeconds}");
+            _pendingResponses.TryRemove(correlationId, out _); // Видалення TaskCompletionSource у випадку таймауту
             throw;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[x] Error while waiting for response: {ex.Message}");
+            _pendingResponses.TryRemove(correlationId, out _); // Видалення TaskCompletionSource у випадку помилки
             throw;
         }
     }

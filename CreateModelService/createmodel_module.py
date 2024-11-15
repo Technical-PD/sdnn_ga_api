@@ -39,8 +39,8 @@ channel = connection.channel()
 # Створення черги
 request_queue = 'request_queue'
 response_queue = 'response_queue'
-channel.queue_declare(queue=request_queue)
-channel.queue_declare(queue=response_queue)
+channel.queue_declare(queue=request_queue, durable=True)
+channel.queue_declare(queue=response_queue, durable=True)
 
 # Обробка повідомлення
 def on_request(ch, method, properties, body):
@@ -61,5 +61,6 @@ def on_request(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 channel.basic_consume(queue=request_queue, on_message_callback=on_request)
+channel.basic_qos(prefetch_count=1)
 print(" [*] Waiting for messages.")
 channel.start_consuming()

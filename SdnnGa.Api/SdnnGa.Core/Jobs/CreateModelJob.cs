@@ -29,15 +29,13 @@ public class CreateModelJob : ICreateModelJob
     {
         InizializeSettingValues(context);
 
-        var result = await _rabbitMqClient.SendMessageAsync(_modelConfig, timeoutInSecconds: 30);
+        var result = await _rabbitMqClient.SendMessageAsync(_modelConfig, timeoutInSeconds: 1000);
 
         using (var file = new MemoryStream(Encoding.UTF8.GetBytes(result)))
         {
             file.Position = 0;
             await _storage.PutFileAsync(_modelStoragePath, file, true);
         }
-
-        _rabbitMqClient.Close();
     }
 
     private void InizializeSettingValues(IJobExecutionContext context)

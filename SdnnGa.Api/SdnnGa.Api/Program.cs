@@ -38,7 +38,7 @@ builder.Services.AddSingleton(configuration);
 builder.Services.AddAutoMapper(typeof(DtoProfile));
 
 // RebbitMQ
-builder.Services.AddTransient<IRabbitMqClient, RabbitMqClient>(provider => new RabbitMqClient("rabbitmq-service", "request_queue", "response_queue"));
+builder.Services.AddSingleton<IRabbitMqClient, RabbitMqClient>(provider => new RabbitMqClient("rabbitmq-service", "request_queue", "response_queue"));
 
 // Blob Storage
 builder.Services.AddScoped<IAzureBlobProvider, AzureBlobProvider>();
@@ -50,14 +50,9 @@ builder.Services.AddQuartz(q =>
     q.UseMicrosoftDependencyInjectionJobFactory();
 });
 
-builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
-builder.Services.AddSingleton(provider =>
-{
-    var schedulerFactory = provider.GetRequiredService<ISchedulerFactory>();
-    return schedulerFactory.GetScheduler().GetAwaiter().GetResult();
-});
-
-builder.Services.AddScoped<IJobScheduler, JobScheduler>();
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = false);
+builder.Services.AddSingleton<IJobScheduler, JobScheduler>();
+builder.Services.AddSingleton<ISchedulerService, SchedulerService>();
 
 // DbContext
 var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
