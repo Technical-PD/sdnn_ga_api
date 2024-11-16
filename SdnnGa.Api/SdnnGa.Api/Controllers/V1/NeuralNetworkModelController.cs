@@ -7,6 +7,7 @@ using SdnnGa.Model.Models.Core.NNModel;
 using System.Text.Json;
 using SdnnGa.Core.Jobs;
 using System.Collections.Generic;
+using SdnnGa.Model.Services;
 
 namespace SdnnGa.Api.Controllers.V1;
 
@@ -16,22 +17,32 @@ public class NeuralNetworkModelController : ControllerBase
 {
     private readonly IJobScheduler _jobScheduler;
     private readonly IRabbitMqClient _rebbitMqClient;
+    private readonly INeuralNetworkModelService _neuralNetworkModelService;
 
     public NeuralNetworkModelController(
         IJobScheduler jobScheduler,
-        IRabbitMqClient rebbitMqClient)
+        IRabbitMqClient rebbitMqClient,
+        INeuralNetworkModelService neuralNetworkModelService)
     {
         _jobScheduler = jobScheduler;
         _rebbitMqClient = rebbitMqClient;
+        _neuralNetworkModelService = neuralNetworkModelService;
     }
 
-    [HttpGet("{message}")]
-    public async Task<IActionResult> TestRebbitMq(string message, CancellationToken cancellationToken = default)
+    [HttpGet("ByEpoche/{epocheId}")]
+    public async Task<IActionResult> GetByEpocheAsync(string epocheId, CancellationToken cancellationToken = default)
     {
-        var response = await _rebbitMqClient.SendMessageAsync(message);
-        _rebbitMqClient.Close();
+        var result = await _neuralNetworkModelService.GetModelByEpochIdAsync(epocheId, cancellationToken);
 
-        return Ok(response);
+        return Ok(result);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await _neuralNetworkModelService.GetAllModelsAsync(cancellationToken);
+
+        return Ok(result);
     }
 
     [HttpGet("ModelCreateTest")]

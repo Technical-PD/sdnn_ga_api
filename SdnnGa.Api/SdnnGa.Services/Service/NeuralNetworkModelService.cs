@@ -5,6 +5,8 @@ using SdnnGa.Model.Models;
 using SdnnGa.Model.Services;
 using SdnnGa.Model.Services.Models.ServiceResult;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,6 +43,62 @@ public class NeuralNetworkModelService : INeuralNetworkModelService
         catch (Exception ex)
         {
             return ServiceResult<NeuralNetworkModel>.FromUnexpectedError($"Unexpected error occured on neural network model adding to the DataBase. Message: '{ex.Message}'");
+        }
+    }
+
+    public async Task<ServiceResult<NeuralNetworkModel>> GetModelByIdAsync(string modelId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(modelId))
+        {
+            return ServiceResult<NeuralNetworkModel>.FromError($"Argument null error: {modelId} can not be null or empty");
+        }
+
+        try
+        {
+            var dbModel = await _dbRepository.GetByIdAsync(modelId, null, cancellationToken);
+
+            return ServiceResult<NeuralNetworkModel>.FromSuccess(_mapper.Map<NeuralNetworkModel>(dbModel));
+        }
+        catch (Exception ex)
+        {
+            return ServiceResult<NeuralNetworkModel>.FromUnexpectedError($"Unexpected error occured on obtaining by Id neural network model. Message: '{ex.Message}'");
+        }
+    }
+
+    public async Task<ServiceResult<List<NeuralNetworkModel>>> GetModelByEpochIdAsync(string epochId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(epochId))
+        {
+            return ServiceResult<List<NeuralNetworkModel>>.FromError($"Argument null error: {epochId} can not be null or empty");
+        }
+
+        try
+        {
+            var createdDbModel = await _dbRepository.GetByFieldAsync("EpocheId", epochId, null, cancellationToken);
+
+            var modelList = createdDbModel.Select(modelDb => _mapper.Map<NeuralNetworkModel>(modelDb)).ToList();
+
+            return ServiceResult<List<NeuralNetworkModel>>.FromSuccess(modelList);
+        }
+        catch (Exception ex)
+        {
+            return ServiceResult<List<NeuralNetworkModel>>.FromUnexpectedError($"Unexpected error occured on obtaining by EpocheId neural network model. Message: '{ex.Message}'");
+        }
+    }
+
+    public async Task<ServiceResult<List<NeuralNetworkModel>>> GetAllModelsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var createdDbModel = await _dbRepository.GetAllAsync(cancellationToken);
+
+            var modelList = createdDbModel.Select(modelDb => _mapper.Map<NeuralNetworkModel>(modelDb)).ToList();
+
+            return ServiceResult<List<NeuralNetworkModel>>.FromSuccess(modelList);
+        }
+        catch (Exception ex)
+        {
+            return ServiceResult<List<NeuralNetworkModel>>.FromUnexpectedError($"Unexpected error occured on obtaining by EpocheId neural network model. Message: '{ex.Message}'");
         }
     }
 }

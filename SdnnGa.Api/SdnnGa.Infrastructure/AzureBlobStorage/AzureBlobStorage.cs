@@ -1,6 +1,8 @@
 ﻿using SdnnGa.Model.Infrastructure.Interfaces.AzureBlobStorage;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace SdnnGa.Infrastructure.AzureBlobStorage;
@@ -33,5 +35,21 @@ public class AzureBlobStorage : IStorage
     public async Task DeleteAsync(string fileName)
     {
         await _azureBlobProvider.DeleteAsync(ContainerName, fileName);
+    }
+
+    public string ReadStreamToString(Stream stream, Encoding encoding)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(encoding);
+
+        if (!stream.CanRead)
+        {
+            throw new NotSupportedException("Stream is not support reading.");
+        }
+
+        using (StreamReader reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true))
+        {
+            return reader.ReadToEnd();
+        }
     }
 }
