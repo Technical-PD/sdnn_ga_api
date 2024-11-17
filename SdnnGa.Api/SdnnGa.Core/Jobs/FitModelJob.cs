@@ -3,7 +3,6 @@ using SdnnGa.Model.Constants;
 using SdnnGa.Model.Core.Interfaces;
 using SdnnGa.Model.Infrastructure.Interfaces.AzureBlobStorage;
 using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
-using SdnnGa.Model.Models;
 using SdnnGa.Model.Models.Core.NNModel;
 using SdnnGa.Model.Services;
 using System;
@@ -75,20 +74,20 @@ public class FitModelJob : IFitModelJob
     {
         var jobDataMap = context.JobDetail.JobDataMap;
 
-        _modelId = jobDataMap.GetString(JobSettings.FitModelJob.ModelIdSettingName);
-        _sessionId = jobDataMap.GetString(JobSettings.FitModelJob.SessionIdSettingName);
-        _epocheNo = jobDataMap.GetString(JobSettings.FitModelJob.EpocheNoSettingName);
+        _modelId = jobDataMap.GetString(JobSettings.FitModel.ModelIdSettingName);
+        _sessionId = jobDataMap.GetString(JobSettings.FitModel.SessionIdSettingName);
+        _epocheNo = jobDataMap.GetString(JobSettings.FitModel.EpocheNoSettingName);
 
         var fitModelJobConfig = new FitModelJobConfig
         {
-            UseEarlyStopping = bool.Parse(jobDataMap.GetString(JobSettings.FitModelJob.UseEarlyStoppingSettingName)),
-            MinDelta = float.Parse(jobDataMap.GetString(JobSettings.FitModelJob.MinDeltaSettingName)),
-            Patience = bool.Parse(jobDataMap.GetString(JobSettings.FitModelJob.PatienceSettingName)),
-            IsLearnWithValidation = bool.Parse(jobDataMap.GetString(JobSettings.FitModelJob.IsLearnWithValidationSettingName)),
-            Optimizer = jobDataMap.GetString(JobSettings.FitModelJob.OptimizerSettingName),
-            LossFunc = jobDataMap.GetString(JobSettings.FitModelJob.LossFuncSettingName),
-            Epochs = int.Parse(jobDataMap.GetString(JobSettings.FitModelJob.EpochsSettingName)),
-            BatchSize = int.Parse(jobDataMap.GetString(JobSettings.FitModelJob.BatchSizeSettingName)),
+            UseEarlyStopping = bool.Parse(jobDataMap.GetString(JobSettings.FitModel.UseEarlyStoppingSettingName)),
+            MinDelta = float.Parse(jobDataMap.GetString(JobSettings.FitModel.MinDeltaSettingName)),
+            Patience = bool.Parse(jobDataMap.GetString(JobSettings.FitModel.PatienceSettingName)),
+            IsLearnWithValidation = bool.Parse(jobDataMap.GetString(JobSettings.FitModel.IsLearnWithValidationSettingName)),
+            Optimizer = jobDataMap.GetString(JobSettings.FitModel.OptimizerSettingName),
+            LossFunc = jobDataMap.GetString(JobSettings.FitModel.LossFuncSettingName),
+            Epochs = int.Parse(jobDataMap.GetString(JobSettings.FitModel.EpochsSettingName)),
+            BatchSize = int.Parse(jobDataMap.GetString(JobSettings.FitModel.BatchSizeSettingName)),
             WeigthPath = string.Format(StoragePath.WeightPath, _sessionId, _epocheNo, Guid.NewGuid())
         };
 
@@ -99,13 +98,13 @@ public class FitModelJob : IFitModelJob
             fitModelJobConfig.ModelConfigJson = _storage.ReadStreamToString(memoryStream, Encoding.UTF8);
         }
 
-        string xTrainPath = jobDataMap.GetString(JobSettings.FitModelJob.XTrainPathSettingName);
+        string xTrainPath = jobDataMap.GetString(JobSettings.FitModel.XTrainPathSettingName);
         using (var memoryStream = await _storage.GetFileAsync(xTrainPath))
         {
             fitModelJobConfig.XTrain = _storage.ReadStreamToString(memoryStream, Encoding.UTF8);
         }
 
-        string yTrainPath = jobDataMap.GetString(JobSettings.FitModelJob.YTrainPathSettingName);
+        string yTrainPath = jobDataMap.GetString(JobSettings.FitModel.YTrainPathSettingName);
         using (var memoryStream = await _storage.GetFileAsync(yTrainPath))
         {
             fitModelJobConfig.YTrain = _storage.ReadStreamToString(memoryStream, Encoding.UTF8);

@@ -1,5 +1,4 @@
-﻿using SdnnGa.Model.Models;
-using SdnnGa.Model.Models.Core.GAConfigs;
+﻿using SdnnGa.Model.Models.Core.GAConfigs;
 using SdnnGa.Model.Models.Core.NNModel;
 using System.Collections.Generic;
 using System;

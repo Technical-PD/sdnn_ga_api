@@ -10,6 +10,8 @@ public class NeuralNetworkModel : BaseModel
 
     public string ModelConfigFileName { get; set; }
 
+    public string ModelConfigDotNetFileName { get; set; }
+
     public string FitHistory { get; set; }
 
     public float LossValue { get; set; }

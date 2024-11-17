@@ -1,8 +1,6 @@
-﻿using Quartz;
-using SdnnGa.Model.Constants;
+﻿using SdnnGa.Model.Constants;
 using SdnnGa.Model.Core.Interfaces;
 using SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
-using SdnnGa.Model.Models;
 using SdnnGa.Model.Models.Core.GAConfigs;
 using SdnnGa.Model.Services;
 using SdnnGa.Model.Services.Models.ServiceResult;
@@ -44,80 +42,15 @@ public class GeneticService : IGeneticService
         string sessionId, 
         CancellationToken cancellationToken = default)
     {
-        var currentEpochResult = await _epochService.AddEpochAsync(sessionId, cancellationToken);
+        string modelRangeConfigJson = JsonSerializer.Serialize(modelRangeConfig);
 
-        if (currentEpochResult.IsError)
+        var geneticJobSettngs = new Dictionary<string, string>
         {
-            ServiceResult.FromError($"Error on creating epoch in Genetic Flow. Message: '{currentEpochResult.Message}'");
-        }
+            { JobSettings.GeneticEpoche.SessionIdSettingName, sessionId },
+            { JobSettings.GeneticEpoche.ModelRangeConfigSettingName, modelRangeConfigJson },
+        };
 
-        var sessionResult = await _sessionService.GetSessionAsync(sessionId, cancellationToken);
-
-        if (sessionResult.IsError)
-        {
-            ServiceResult.FromError($"Error on obtaining session in Genetic Flow. Message: '{sessionResult.Message}'");
-        }
-
-        var fitConfigResult = await _fitConfigService.GetFitConfigBySessionAsync(sessionId, cancellationToken);
-
-        if (fitConfigResult.IsError)
-        {
-            ServiceResult.FromError($"Error on obtaining fit config in Genetic Flow. Message: '{fitConfigResult.Message}'");
-        }
-
-        for (int i = 0; i < modelRangeConfig.CountOfModels; i++)
-        {
-            string modelConfigJson = JsonSerializer.Serialize(modelRangeConfig);
-
-            var newModel = new NeuralNetworkModel
-            {
-                SessionId = sessionId,
-                EpocheId = currentEpochResult.Entity.Id,
-                IsTrained = false,
-                Name = $"Model_{currentEpochResult.Entity.EpochNo}",
-            };
-
-            var createdModelResult = await _networkModelService.CreateModelAsync(newModel);
-
-            //await _jobScheduler.ScheduleJobAsync<ICreateModelJob>("CreateModel", new Dictionary<string, string>
-            //{
-            //    { JobSettings.CreateModel.ModelConfigSettingName, modelConfigJson },
-            //    { JobSettings.CreateModel.SessionIdSettingName, sessionId },
-            //    { JobSettings.CreateModel.EpocheNoSettingName, currentEpochResult.Entity.EpochNo.ToString() },
-            //    { JobSettings.CreateModel.ModelIdSettingName, createdModelResult.Entity.Id }
-            //});
-            
-            var settingModelCreateJob = new Dictionary<string, string>
-            {
-                { JobSettings.CreateModel.ModelConfigSettingName, modelConfigJson },
-                { JobSettings.CreateModel.SessionIdSettingName, sessionId },
-                { JobSettings.CreateModel.EpocheNoSettingName, currentEpochResult.Entity.EpochNo.ToString() },
-                { JobSettings.CreateModel.ModelIdSettingName, createdModelResult.Entity.Id }
-            };
-
-            var settingModelFitJob = new Dictionary<string, string>
-            {
-                { JobSettings.FitModelJob.BatchSizeSettingName, "50" },
-                { JobSettings.FitModelJob.XTrainPathSettingName, sessionResult.Entity.XTrainFileName },
-                { JobSettings.FitModelJob.YTrainPathSettingName, sessionResult.Entity.YTrainFileName },
-                { JobSettings.FitModelJob.LossFuncSettingName, fitConfigResult.Entity.LossFunc },
-                { JobSettings.FitModelJob.OptimizerSettingName, fitConfigResult.Entity.FitMethod },
-                { JobSettings.FitModelJob.EpochsSettingName, fitConfigResult.Entity.MaxEpoches.ToString() },
-                { JobSettings.FitModelJob.IsLearnWithValidationSettingName, "False" },
-                { JobSettings.FitModelJob.UseEarlyStoppingSettingName, "False" },
-                { JobSettings.FitModelJob.MinDeltaSettingName, "0.02" },
-                { JobSettings.FitModelJob.PatienceSettingName, "True" },
-                { JobSettings.FitModelJob.ModelIdSettingName, createdModelResult.Entity.Id },
-                { JobSettings.FitModelJob.SessionIdSettingName, sessionId },
-                { JobSettings.FitModelJob.EpocheNoSettingName, currentEpochResult.Entity.EpochNo.ToString() },
-            };
-
-            await _jobScheduler.ScheduleSequentialJobsAsync<ICreateModelJob, IFitModelJob>(
-                firstJobName: $"CreateModel-{Guid.NewGuid()}",
-                secondJobName: $"FitModel-{Guid.NewGuid()}",
-                firstJobSettings: settingModelCreateJob,
-                secondJobSettings: settingModelFitJob);
-        }
+        await _jobScheduler.ScheduleJobAsync<IGeneticEpochJob>($"GeneticEpochRun-{Guid.NewGuid()}", geneticJobSettngs);
 
         return ServiceResult.FromSuccess();
     }
@@ -149,19 +82,19 @@ public class GeneticService : IGeneticService
 
         var settingDict = new Dictionary<string, string>
         {
-            { JobSettings.FitModelJob.BatchSizeSettingName, "50" },
+            { JobSettings.FitModel.BatchSizeSettingName, "50" },
             //{ JobSettings.FitModelJob.ModelConfigJsonPathSettingName, modelResult.Entity.ModelConfigFileName },
-            { JobSettings.FitModelJob.XTrainPathSettingName, sessionResult.Entity.XTrainFileName },
-            { JobSettings.FitModelJob.YTrainPathSettingName, sessionResult.Entity.YTrainFileName },
-            { JobSettings.FitModelJob.LossFuncSettingName, fitConfigResult.Entity.LossFunc },
-            { JobSettings.FitModelJob.OptimizerSettingName, fitConfigResult.Entity.FitMethod },
-            { JobSettings.FitModelJob.EpochsSettingName, fitConfigResult.Entity.MaxEpoches.ToString() },
-            { JobSettings.FitModelJob.IsLearnWithValidationSettingName, "False" },
-            { JobSettings.FitModelJob.UseEarlyStoppingSettingName, "False" },
-            { JobSettings.FitModelJob.MinDeltaSettingName, "0.02" },
-            { JobSettings.FitModelJob.PatienceSettingName, "True" },
+            { JobSettings.FitModel.XTrainPathSettingName, sessionResult.Entity.XTrainFileName },
+            { JobSettings.FitModel.YTrainPathSettingName, sessionResult.Entity.YTrainFileName },
+            { JobSettings.FitModel.LossFuncSettingName, fitConfigResult.Entity.LossFunc },
+            { JobSettings.FitModel.OptimizerSettingName, fitConfigResult.Entity.FitMethod },
+            { JobSettings.FitModel.EpochsSettingName, fitConfigResult.Entity.MaxEpoches.ToString() },
+            { JobSettings.FitModel.IsLearnWithValidationSettingName, "False" },
+            { JobSettings.FitModel.UseEarlyStoppingSettingName, "False" },
+            { JobSettings.FitModel.MinDeltaSettingName, "0.02" },
+            { JobSettings.FitModel.PatienceSettingName, "True" },
             //{ JobSettings.FitModelJob.WeightPathSettingName, weightPath },
-            { JobSettings.FitModelJob.ModelIdSettingName, modelId },
+            { JobSettings.FitModel.ModelIdSettingName, modelId },
         };
 
         await _jobScheduler.ScheduleJobAsync<IFitModelJob>("FitModel", settingDict);

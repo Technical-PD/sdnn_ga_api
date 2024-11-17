@@ -2,10 +2,12 @@
 using SdnnGa.Core.Classes;
 using SdnnGa.Model.Constants;
 using SdnnGa.Model.Core.Interfaces;
+using SdnnGa.Model.Database.Models;
 using SdnnGa.Model.Infrastructure.Interfaces.AzureBlobStorage;
 using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
 using SdnnGa.Model.Models;
 using SdnnGa.Model.Models.Core.GAConfigs;
+using SdnnGa.Model.Models.Core.NNModel;
 using SdnnGa.Model.Services;
 using System;
 using System.IO;
@@ -17,8 +19,10 @@ namespace SdnnGa.Core.Jobs;
 
 public class CreateModelJob : ICreateModelJob
 {
-    private ModelRangeConfig _modelConfig;
+    private ModelRangeConfig _modelRangeConfig;
+    private ModelConfig _modelConfig;
     private string _modelStoragePath;
+    private string _modelNetStoragePath;
     private string _sessionId;
     private string _epocheNo;
     private string _modelId;
@@ -42,13 +46,28 @@ public class CreateModelJob : ICreateModelJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        InizializeSettingValues(context);
+        await InizializeSettingValuesAsync(context);
 
-        var model = _modelGenerator.GenerateRandomModelConfig(_modelConfig);
+        ModelConfig model = null;
+        
+        if (_modelConfig == null)
+        {
+            model = _modelGenerator.GenerateRandomModelConfig(_modelRangeConfig);
+        }
+        else
+        {
+            model = NeuralNetworkMutation.Mutate(_modelConfig);
+        }
 
         string modelJson = JsonSerializer.Serialize(model);
 
         var result = await _rabbitMqClient.SendMessageAsync(modelJson, timeoutInSeconds: 1000);
+
+        using (var file = new MemoryStream(Encoding.UTF8.GetBytes(modelJson)))
+        {
+            file.Position = 0;
+            await _storage.PutFileAsync(_modelNetStoragePath, file, true);
+        }
 
         using (var file = new MemoryStream(Encoding.UTF8.GetBytes(result)))
         {
@@ -63,15 +82,33 @@ public class CreateModelJob : ICreateModelJob
         await _networkModelService.UpdateModelAssync(modelToUpdateResult.Entity);
     }
 
-    private void InizializeSettingValues(IJobExecutionContext context)
+    private async Task InizializeSettingValuesAsync(IJobExecutionContext context)
     {
         var jobDataMap = context.JobDetail.JobDataMap;
 
-        _modelConfig = JsonSerializer.Deserialize<ModelRangeConfig>(jobDataMap.GetString(JobSettings.CreateModel.ModelConfigSettingName));
+        string modelConfigNetPath = jobDataMap.GetString(JobSettings.CreateModel.ModelConfigNetPathSettingName);
+
+        if (!string.IsNullOrEmpty(modelConfigNetPath))
+        {
+            using (var memoryStream = await _storage.GetFileAsync(modelConfigNetPath))
+            {
+                var modelConfigString = _storage.ReadStreamToString(memoryStream, Encoding.UTF8);
+                _modelConfig = JsonSerializer.Deserialize<ModelConfig>(modelConfigString);
+            }
+        }
+
+        string modelRangeConfig = jobDataMap.GetString(JobSettings.CreateModel.ModelRangeConfigSettingName);
+
+        if (!string.IsNullOrEmpty(modelRangeConfig))
+        {
+            _modelRangeConfig = JsonSerializer.Deserialize<ModelRangeConfig>(modelRangeConfig);
+        }
+
         _sessionId = jobDataMap.GetString(JobSettings.CreateModel.SessionIdSettingName);
         _epocheNo = jobDataMap.GetString(JobSettings.CreateModel.EpocheNoSettingName);
         _modelId = jobDataMap.GetString(JobSettings.CreateModel.ModelIdSettingName);
 
+        _modelNetStoragePath = string.Format(StoragePath.DotNetModelPath, _sessionId, _epocheNo, Guid.NewGuid());
         _modelStoragePath = string.Format(StoragePath.ModelPath, _sessionId, _epocheNo, Guid.NewGuid());
     }
 }

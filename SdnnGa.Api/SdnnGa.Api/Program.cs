@@ -81,6 +81,7 @@ builder.Services.AddScoped<IModelGenerator, ModelGenerator>();
 
 builder.Services.AddScoped<ICreateModelJob, CreateModelJob>();
 builder.Services.AddScoped<IFitModelJob, FitModelJob>();
+builder.Services.AddScoped<IGeneticEpochJob, GeneticEpochJob>();
 
 var app = builder.Build();
 

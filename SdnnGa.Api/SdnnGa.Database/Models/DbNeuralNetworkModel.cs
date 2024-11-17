@@ -16,6 +16,9 @@ public class DbNeuralNetworkModel : BaseModel
     [MaxLength(255)]
     public string ModelConfigFileName { get; set; }
 
+    [MaxLength(255)]
+    public string ModelConfigDotNetFileName { get; set; }
+
     public string FitHistory {  get; set; }
 
     public float LossValue { get; set; }
