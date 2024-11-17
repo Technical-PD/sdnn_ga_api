@@ -22,6 +22,6 @@ public class JobCompleteListener : IJobListener
     public async Task JobWasExecuted(IJobExecutionContext context, JobExecutionException jobException, CancellationToken cancellationToken = default)
     {
         var jobKey = context.JobDetail.Key;
-        await _scheduler.DeleteJob(jobKey);
+        //await _scheduler.DeleteJob(jobKey);
     }
 }

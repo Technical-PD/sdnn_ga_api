@@ -13,4 +13,6 @@ public interface ISessionService
     Task<ServiceResult<ICollection<Session>>> GetAllSessionsAsync(CancellationToken cancellationToken = default);
 
     Task<ServiceResult<Session>> CreateSessionAssync(Session session, CancellationToken cancellationToken = default);
+
+    Task<ServiceResult<Session>> UpdateSessionAssync(Session session, CancellationToken cancellationToken = default);
 }

@@ -7,6 +7,10 @@ public class Session : BaseModel
 {
     public string Description { get; set; }
 
+    public string XTrainFileName { get; set; }
+
+    public string YTrainFileName { get; set; }
+
     public ICollection<NeuralNetworkModel> NeuralNetworkModels { get; set; }
 
     public ICollection<Epoch> Epochs { get; set; }

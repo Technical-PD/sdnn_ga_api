@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using SdnnGa.Model.Enums;
+using SdnnGa.Model.Models;
 using SdnnGa.Model.Services;
 using SdnnGa.Model.Services.Models.ServiceResult;
 using System.IO;
@@ -32,13 +33,13 @@ public class DataController : ControllerBase
             return BadRequest("File is empty.");
         }
 
-        var result = ServiceResult.FromSuccess();
+        var result = ServiceResult<Session>.FromSuccess(null);
 
         using (var memoryStream = new MemoryStream())
         {
             await dataForm.CopyToAsync(memoryStream);
 
-            result = await _dataService.PutTrainDataAsync(sessionId, memoryStream, DataType.XData);
+            result = await _dataService.PutTrainDataAsync(sessionId, memoryStream, DataType.XData, cancellationToken);
         }
 
         return Ok(result);
@@ -55,13 +56,13 @@ public class DataController : ControllerBase
             return BadRequest("File is empty.");
         }
 
-        var result = ServiceResult.FromSuccess();
+        var result = ServiceResult<Session>.FromSuccess(null);
 
         using (var memoryStream = new MemoryStream())
         {
             await dataForm.CopyToAsync(memoryStream);
 
-            result = await _dataService.PutTrainDataAsync(sessionId, memoryStream, DataType.YData);
+            result = await _dataService.PutTrainDataAsync(sessionId, memoryStream, DataType.YData, cancellationToken);
         }
 
         return Ok(result);

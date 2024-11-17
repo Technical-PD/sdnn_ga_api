@@ -46,6 +46,32 @@ public class NeuralNetworkModelService : INeuralNetworkModelService
         }
     }
 
+    public async Task<ServiceResult<NeuralNetworkModel>> UpdateModelAssync(NeuralNetworkModel model, CancellationToken cancellationToken = default)
+    {
+        if (model == null)
+        {
+            return ServiceResult<NeuralNetworkModel>.FromError($"Failed on NN model updating. Parammeter {nameof(model)} can not be null.");
+        }
+
+        try
+        {
+            var newDbModel = _mapper.Map<DbNeuralNetworkModel>(model);
+
+            var dbSession = await _dbRepository.UpdateAsync(newDbModel, cancellationToken);
+
+            if (dbSession == null)
+            {
+                return ServiceResult<NeuralNetworkModel>.FromError($"Failed on NN model updating.");
+            }
+
+            return ServiceResult<NeuralNetworkModel>.FromSuccess(_mapper.Map<NeuralNetworkModel>(dbSession));
+        }
+        catch (Exception ex)
+        {
+            return ServiceResult<NeuralNetworkModel>.FromUnexpectedError($"UnespectedError ocured on NN model updating. Exception message '{ex.Message}'.");
+        }
+    }
+
     public async Task<ServiceResult<NeuralNetworkModel>> GetModelByIdAsync(string modelId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(modelId))

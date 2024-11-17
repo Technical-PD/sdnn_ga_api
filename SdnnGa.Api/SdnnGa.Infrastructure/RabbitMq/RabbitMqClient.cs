@@ -4,11 +4,12 @@ using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
 using System;
 using System.Collections.Concurrent;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace SdnnGa.Infrastructure.RabbitMq;
 
-public class RabbitMqClient : IRabbitMqClient
+public class RabbitMqClient : IRabbitMqClientCreateModelService, IRabbitMqClientFitModelService
 {
     private readonly string _hostname;
     private readonly string _requestQueue;
@@ -100,6 +101,28 @@ public class RabbitMqClient : IRabbitMqClient
             _pendingResponses.TryRemove(correlationId, out _); // Видалення TaskCompletionSource у випадку помилки
             throw;
         }
+    }
+
+    public void PurgeRequestQueue()
+    {
+        BasicGetResult result;
+        do
+        {
+            result = _channel.BasicGet(queue: _requestQueue, autoAck: true);
+        } while (result != null);
+
+        Console.WriteLine($"Queue '{_requestQueue}' has been purged.");
+    }
+
+    public void PurgeResponseQueue()
+    {
+        BasicGetResult result;
+        do
+        {
+            result = _channel.BasicGet(queue: _requestQueue, autoAck: true);
+        } while (result != null);
+
+        Console.WriteLine($"Queue '{_requestQueue}' has been purged.");
     }
 
     public void Close()

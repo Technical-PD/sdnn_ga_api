@@ -16,12 +16,12 @@ namespace SdnnGa.Api.Controllers.V1;
 public class NeuralNetworkModelController : ControllerBase
 {
     private readonly IJobScheduler _jobScheduler;
-    private readonly IRabbitMqClient _rebbitMqClient;
+    private readonly IRabbitMqClientCreateModelService _rebbitMqClient;
     private readonly INeuralNetworkModelService _neuralNetworkModelService;
 
     public NeuralNetworkModelController(
         IJobScheduler jobScheduler,
-        IRabbitMqClient rebbitMqClient,
+        IRabbitMqClientCreateModelService rebbitMqClient,
         INeuralNetworkModelService neuralNetworkModelService)
     {
         _jobScheduler = jobScheduler;

@@ -113,7 +113,14 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
         {
             entity.RecModified = DateTime.UtcNow;
 
-            _dbSet.Update(entity);
+            var existingEntity = await _dbSet.FindAsync(new object[] { entity.Id }, cancellationToken);
+
+            if (existingEntity == null)
+            {
+                throw new InvalidOperationException("Entity not found");
+            }
+
+            _context.Entry(existingEntity).CurrentValues.SetValues(entity);
             await _context.SaveChangesAsync(cancellationToken);
         }
         catch (Exception)

@@ -38,7 +38,8 @@ builder.Services.AddSingleton(configuration);
 builder.Services.AddAutoMapper(typeof(DtoProfile));
 
 // RebbitMQ
-builder.Services.AddSingleton<IRabbitMqClient, RabbitMqClient>(provider => new RabbitMqClient("rabbitmq-service", "request_queue", "response_queue"));
+builder.Services.AddSingleton<IRabbitMqClientCreateModelService, RabbitMqClient>(provider => new RabbitMqClient("rabbitmq-service", "request_queue", "response_queue"));
+builder.Services.AddSingleton<IRabbitMqClientFitModelService, RabbitMqClient>(provider => new RabbitMqClient("rabbitmq-service", "fit_request_queue", "fit_response_queue"));
 
 // Blob Storage
 builder.Services.AddScoped<IAzureBlobProvider, AzureBlobProvider>();
@@ -73,11 +74,13 @@ builder.Services.AddScoped<IEpochService, EpochService>();
 builder.Services.AddScoped<IGeneticService, GeneticService>();
 builder.Services.AddScoped<INeuralNetworkModelService, NeuralNetworkModelService>();
 builder.Services.AddScoped<IDataService, DataService>();
+builder.Services.AddScoped<IFitConfigService, FitConfigService>();
 
 // Core
 builder.Services.AddScoped<IModelGenerator, ModelGenerator>();
 
 builder.Services.AddScoped<ICreateModelJob, CreateModelJob>();
+builder.Services.AddScoped<IFitModelJob, FitModelJob>();
 
 var app = builder.Build();
 

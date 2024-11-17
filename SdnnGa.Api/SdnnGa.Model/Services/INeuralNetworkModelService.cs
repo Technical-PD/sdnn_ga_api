@@ -10,6 +10,8 @@ public interface INeuralNetworkModelService
 {
     Task<ServiceResult<NeuralNetworkModel>> CreateModelAsync(NeuralNetworkModel neuralNetworkModel, CancellationToken cancellationToken = default);
 
+    Task<ServiceResult<NeuralNetworkModel>> UpdateModelAssync(NeuralNetworkModel model, CancellationToken cancellationToken = default);
+
     Task<ServiceResult<NeuralNetworkModel>> GetModelByIdAsync(string modelId, CancellationToken cancellationToken = default);
 
     Task<ServiceResult<List<NeuralNetworkModel>>> GetModelByEpochIdAsync(string epochId, CancellationToken cancellationToken = default);

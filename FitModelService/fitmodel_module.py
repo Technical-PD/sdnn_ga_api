@@ -1,13 +1,22 @@
 import pika
-import numpy as np
 import tensorflow as tf
 import json
 import io
+import os
+import pandas as pd
+import base64
+from azure.storage.blob import BlobServiceClient
+
+connection_string = "DefaultEndpointsProtocol=https;AccountName=sdnngamodelstorage;AccountKey=tihLTqkIHB6IHz8qFt+K9G2T/UnVRtNBVgOImJy3AfX2KOvrJhEsnTppxEFeXWYz1MUeRD3Gdh8V+AStTqeK2w==;EndpointSuffix=core.windows.net"
+container_name = "models"
+
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+container_client = blob_service_client.get_container_client(container_name)
 
 def fit_model(model_config_json):
     # Prepare training data
-    nd_array_x = np.array(model_config_json['XTrain']).reshape(model_config_json['CountOfLines'], model_config_json['CountOfInputs'])
-    nd_array_y = np.array(model_config_json['YTrain']).reshape(model_config_json['CountOfLines'], model_config_json['CountOfOutputs'])
+    nd_array_x = pd.read_csv(io.StringIO(model_config_json['XTrain']), header=0).values.astype(float)
+    nd_array_y = pd.read_csv(io.StringIO(model_config_json['YTrain']), header=0).values.astype(float)
 
     train_x = nd_array_x
     train_y = nd_array_y
@@ -44,6 +53,8 @@ def fit_model(model_config_json):
         metrics=['accuracy']
     )
 
+    print("----------------------FIT-STARTED------------------------", flush=True)
+
     # Train model
     history = model.fit(
         x=train_x,
@@ -54,26 +65,45 @@ def fit_model(model_config_json):
         callbacks=callbacks
     )
 
+    print("----------------------FIT-FINISHED------------------------", flush=True)
+
     # Evaluate model
     result = model.evaluate(
         x=val_x if model_config_json['IsLearnWithValidation'] else train_x,
         y=val_y if model_config_json['IsLearnWithValidation'] else train_y
     )
 
+    weights_file = 'temp.weights.h5'
+    model.save_weights(weights_file)
 
-    weights_io = io.BytesIO()
-    model.save_weights(weights_io)
-    weights_binary = weights_io.getvalue()
+    print("----------------------WEIGHTS-SAVED-LOCALY------------------------", flush=True)
+
+    weigthBlobPath = model_config_json['WeigthPath']
+    blob_client = container_client.get_blob_client(weigthBlobPath)
+
+    with open(weights_file, "rb") as data:
+        blob_client.upload_blob(data, overwrite=True)
+
+    print("----------------------WEIGHTS-SAVED-IN-BLOB-STORAGE------------------------", flush=True)
+
+    # Remove temporary file if it exists
+    if os.path.exists(weights_file):
+        os.remove(weights_file)
+
+    print("----------------------WEIGHTS-REMOVED-LOCALY------------------------", flush=True)
+
+    print("----------------------RESPONSE-CREATING------------------------", flush=True)
 
     fit_history = {
         'Loss': round(result[0], 5),
         'Accuracy': round(result[1], 5),
         'History': history.history,
-        'Epochs': history.epoch,
-        'Weights': weights_binary
     }
+    print("----------------------RESPONSE-CREATED------------------------", flush=True)
 
-    return fit_history
+    print(fit_history, flush=True)
+    fit_history_json = json.dumps(fit_history)
+    return fit_history_json
 
 def process_message(message):
     # Тут обробка повідомлення (просто повернемо те ж повідомлення у відповідь)
@@ -101,14 +131,21 @@ def on_request(ch, method, properties, body):
 
     response = process_message(json_model)
 
+    print("----------------------READY-TO-BE-PUBLISHED------------------------", flush=True)
+
     # Надсилаємо відповідь у чергу, звідки очікує клієнт
-    ch.basic_publish(exchange='',
-                     routing_key=properties.reply_to,
-                     properties=pika.BasicProperties(correlation_id=properties.correlation_id),
-                     body=response)
+    try:
+        ch.basic_publish(exchange='',
+            routing_key=properties.reply_to,
+            properties=pika.BasicProperties(correlation_id=properties.correlation_id),
+            body=response)
+        print("----------------------PUBLISHED------------------------", flush=True)
+    except Exception as e:
+        print(f"Failed to publish message: {e}", flush=True)
+
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 channel.basic_consume(queue=request_queue, on_message_callback=on_request)
 channel.basic_qos(prefetch_count=1)
-print(" [*] Waiting for messages.")
+print(" [*] Waiting for messages.", flush=True)
 channel.start_consuming()

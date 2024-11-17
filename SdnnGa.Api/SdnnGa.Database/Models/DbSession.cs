@@ -11,6 +11,10 @@ public class DbSession : BaseModel
     [MaxLength(256)]
     public string Description { get; set; }
 
+    public string XTrainFileName { get; set; }
+
+    public string YTrainFileName { get; set; }
+
     public ICollection<DbNeuralNetworkModel> NeuralNetworkModels { get; set; }
 
     public ICollection<DbEpoch> Epochs { get; set; }

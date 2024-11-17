@@ -55,6 +55,32 @@ public class SessionService : ISessionService
         }
     }
 
+    public async Task<ServiceResult<Session>> UpdateSessionAssync(Session session, CancellationToken cancellationToken = default)
+    {
+        if (session == null)
+        {
+            return ServiceResult<Session>.FromError($"Failed on session updating. Parammeter {nameof(session)} can not be null.");
+        }
+
+        try
+        {
+            var newDbSession = _mapper.Map<DbSession>(session);
+
+            var dbSession = await _dbRepository.UpdateAsync(newDbSession, cancellationToken);
+
+            if (dbSession == null)
+            {
+                return ServiceResult<Session>.FromError($"Failed on session updating.");
+            }
+
+            return ServiceResult<Session>.FromSuccess(_mapper.Map<Session>(dbSession));
+        }
+        catch (Exception ex)
+        {
+            return ServiceResult<Session>.FromUnexpectedError($"UnespectedError ocured on Session updating. Exception message '{ex.Message}'.");
+        }
+    }
+
     public async Task<ServiceResult<ICollection<Session>>> GetAllSessionsAsync(CancellationToken cancellationToken = default)
     {
         try

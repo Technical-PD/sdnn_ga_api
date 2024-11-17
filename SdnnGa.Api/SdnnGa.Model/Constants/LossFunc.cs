@@ -7,4 +7,5 @@ public static class LossFunc
     public const string MeanAbsoluteError = "mean_absolute_error";
     public const string MeanSquaredLogarithmicError = "mean_squared_logarithmic_error";
     public const string MeanAbsolutePercentageError = "mean_absolute_percentage_error";
+    public const string BinaryCrossentropy = "binary_crossentropy";
 }

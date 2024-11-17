@@ -11,22 +11,15 @@ public class DbFitConfig : BaseModel
     public int MaxEpoches { get; set; }
 
     [Required]
-    public int FitMethod { get; set; }
+    public string FitMethod { get; set; }
+
+    public string[] MetricFuncs { get; set; }
 
     [Required]
-    public int[] MetricFuncs { get; set; }
-
-    [Required]
-    public int LossFunc { get; set; }
+    public string LossFunc { get; set; }
 
     [Required]
     public float Alpha { get; set; }
-
-    [MaxLength(255)]
-    public string XDataFileName { get; set; }
-
-    [MaxLength(255)]
-    public string YDataFileName { get; set; }
 
     [Required]
     [ForeignKey("Session")]

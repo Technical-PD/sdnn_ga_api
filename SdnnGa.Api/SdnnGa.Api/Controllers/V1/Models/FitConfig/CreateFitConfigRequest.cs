@@ -1,8 +1,6 @@
-﻿using SdnnGa.Model.Database.Models;
+﻿namespace SdnnGa.Api.Controllers.V1.Models.FitConfig;
 
-namespace SdnnGa.Model.Models;
-
-public class FitConfig : BaseModel
+public class CreateFitConfigRequest
 {
     public int MaxEpoches { get; set; }
 
@@ -14,7 +12,6 @@ public class FitConfig : BaseModel
 
     public float Alpha { get; set; }
 
-    public string SessionId { get; set; }
+    public string Name { get; set; }
 
-    public Session Session { get; set; }
 }

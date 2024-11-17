@@ -14,4 +14,6 @@ public interface IGeneticService
         char separator,
         string sessionId,
         CancellationToken cancellationToken = default);
+
+    Task<ServiceResult> TestLearningAsync(string sessionId, string modelId, CancellationToken cancellationToken = default);
 }

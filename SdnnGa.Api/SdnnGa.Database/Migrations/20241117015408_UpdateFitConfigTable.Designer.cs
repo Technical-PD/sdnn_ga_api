@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SdnnGa.Database;
@@ -11,9 +12,11 @@ using SdnnGa.Database;
 namespace SdnnGa.Database.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    partial class ApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241117015408_UpdateFitConfigTable")]
+    partial class UpdateFitConfigTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -66,19 +69,17 @@ namespace SdnnGa.Database.Migrations
                     b.Property<float>("Alpha")
                         .HasColumnType("real");
 
-                    b.Property<string>("FitMethod")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("FitMethod")
+                        .HasColumnType("integer");
 
-                    b.Property<string>("LossFunc")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("LossFunc")
+                        .HasColumnType("integer");
 
                     b.Property<int>("MaxEpoches")
                         .HasColumnType("integer");
 
-                    b.Property<string[]>("MetricFuncs")
-                        .HasColumnType("text[]");
+                    b.Property<int[]>("MetricFuncs")
+                        .HasColumnType("integer[]");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -149,14 +150,17 @@ namespace SdnnGa.Database.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("FitHistory")
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsTrained")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("Loss")
+                        .HasColumnType("integer");
+
                     b.Property<float>("LossValue")
                         .HasColumnType("real");
+
+                    b.Property<int[]>("Metric")
+                        .HasColumnType("integer[]");
 
                     b.Property<string>("ModelConfigFileName")
                         .HasMaxLength(255)
@@ -176,6 +180,9 @@ namespace SdnnGa.Database.Migrations
                     b.Property<string>("SessionId")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
 
                     b.Property<string>("WeightsFileName")
                         .HasMaxLength(255)

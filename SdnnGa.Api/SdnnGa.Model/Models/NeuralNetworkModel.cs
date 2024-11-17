@@ -10,11 +10,7 @@ public class NeuralNetworkModel : BaseModel
 
     public string ModelConfigFileName { get; set; }
 
-    public int Type { get; set; }
-
-    public int[] Metric { get; set; }
-
-    public int Loss { get; set; }
+    public string FitHistory { get; set; }
 
     public float LossValue { get; set; }
 

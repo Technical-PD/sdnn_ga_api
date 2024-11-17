@@ -30,4 +30,12 @@ public class GeneticFlowController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPost("TestFitModel/{modelId}")]
+    public async Task<IActionResult> TestFitting([FromQuery] string sessionId, string modelId, CancellationToken cancellationToken = default)
+    {
+        var result = await _geneticService.TestLearningAsync(sessionId, modelId);
+
+        return Ok(result);
+    }
 }
