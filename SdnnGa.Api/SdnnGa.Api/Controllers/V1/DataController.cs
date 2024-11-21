@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using SdnnGa.Api.Controllers.V1.Models.Data;
 using SdnnGa.Model.Enums;
 using SdnnGa.Model.Models;
 using SdnnGa.Model.Services;
@@ -66,5 +66,18 @@ public class DataController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    [HttpPost("GetDataFile")]
+    public async Task<IActionResult> GetDataSetAsync(GetDataRequest getDataRequest)
+    {
+        var datasetResult = await _dataService.GetDataFromStorageAsync(getDataRequest.DataStoragePath);
+
+        if (datasetResult.Entity == null)
+        {
+            return Ok(datasetResult);
+        }
+
+        return File(datasetResult.Entity.OpenReadStream(), datasetResult.Entity.ContentType);
     }
 }

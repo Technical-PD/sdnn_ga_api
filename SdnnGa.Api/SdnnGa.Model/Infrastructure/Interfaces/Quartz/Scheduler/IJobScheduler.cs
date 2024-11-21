@@ -1,4 +1,5 @@
 ﻿using Quartz;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,7 +7,7 @@ namespace SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
 
 public interface IJobScheduler
 {
-    Task ScheduleJobAsync<T>(string jobTypeName, Dictionary<string, string> jobSettings) where T : IJob;
+    Task ScheduleJobAsync<T>(string jobTypeName, string groupName, Dictionary<string, string> jobSettings) where T : IJob;
 
     Task ScheduleSequentialJobsAsync<T1, T2>(
         string firstJobName,
@@ -15,4 +16,10 @@ public interface IJobScheduler
         Dictionary<string, string> secondJobSettings)
         where T1 : IJob
         where T2 : IJob;
+
+    Task ScheduleSequentialParentJobsAsync<TParent>(
+        string parentJobBaseName,
+        int numberOfParentJobs,
+        Func<int, Dictionary<string, string>> parentJobSettingsFactory)
+        where TParent : IJob;
 }

@@ -21,6 +21,8 @@ using SdnnGa.Model.Core.Interfaces;
 using SdnnGa.Core.Classes;
 using SdnnGa.Core.Jobs;
 
+string CORSOpenPolicy = "OpenCORSPolicy";
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -75,6 +77,8 @@ builder.Services.AddScoped<IGeneticService, GeneticService>();
 builder.Services.AddScoped<INeuralNetworkModelService, NeuralNetworkModelService>();
 builder.Services.AddScoped<IDataService, DataService>();
 builder.Services.AddScoped<IFitConfigService, FitConfigService>();
+builder.Services.AddScoped<IStatisticService, StatisticService>();
+builder.Services.AddScoped<IGeneticConfigService, GeneticConfigService>();
 
 // Core
 builder.Services.AddScoped<IModelGenerator, ModelGenerator>();
@@ -82,6 +86,15 @@ builder.Services.AddScoped<IModelGenerator, ModelGenerator>();
 builder.Services.AddScoped<ICreateModelJob, CreateModelJob>();
 builder.Services.AddScoped<IFitModelJob, FitModelJob>();
 builder.Services.AddScoped<IGeneticEpochJob, GeneticEpochJob>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+      name: CORSOpenPolicy,
+      builder => {
+          builder.WithOrigins("*").AllowAnyHeader().AllowAnyMethod();
+      });
+});
 
 var app = builder.Build();
 
@@ -97,7 +110,7 @@ using (var scope = app.Services.CreateScope())
     app.UseSwagger();
     app.UseSwaggerUI();
 //}
-
+app.UseCors(CORSOpenPolicy);
 app.UseHttpsRedirection();
 
 app.UseAuthorization();

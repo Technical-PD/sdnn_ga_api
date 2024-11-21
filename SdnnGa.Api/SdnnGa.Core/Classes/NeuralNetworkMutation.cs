@@ -6,10 +6,10 @@ namespace SdnnGa.Core.Classes;
 
 public static class NeuralNetworkMutation
 {
-    private static Random random = new Random();
+    private static Random random = new Random(DateTime.UtcNow.Millisecond);
     private static List<string> activationFunctions = new List<string> { "relu", "sigmoid", "tanh", "softmax", "linear" };
 
-    public static ModelConfig Mutate(ModelConfig model)
+    public static ModelConfig Mutate(ModelConfig model, float mutateCof)
     {
         // Create a copy of the model to apply mutations
         var mutatedModel = new ModelConfig
@@ -25,7 +25,7 @@ public static class NeuralNetworkMutation
         };
 
         // Mutate the output layer's activation function with a small probability
-        if (random.NextDouble() < 0.1)
+        if (random.NextDouble() < mutateCof * 0.5)
         {
             mutatedModel.OutputLayer.ActivationFunc = GetRandomActivationFunction(mutatedModel.OutputLayer.ActivationFunc);
         }
@@ -34,7 +34,7 @@ public static class NeuralNetworkMutation
         for (int i = 0; i < mutatedModel.InternalLayers.Count; i++)
         {
             // Mutate layer neurons count with some probability
-            if (random.NextDouble() < 0.2)
+            if (random.NextDouble() < mutateCof)
             {
                 int minNeurons = Math.Max(1, mutatedModel.InternalLayers[i].NeuronsCount - 10);
                 int maxNeurons = mutatedModel.InternalLayers[i].NeuronsCount + 10;
@@ -42,14 +42,14 @@ public static class NeuralNetworkMutation
             }
 
             // Mutate layer activation function with some probability
-            if (random.NextDouble() < 0.1)
+            if (random.NextDouble() < mutateCof * 0.5)
             {
                 mutatedModel.InternalLayers[i].ActivationFunc = GetRandomActivationFunction(mutatedModel.InternalLayers[i].ActivationFunc);
             }
         }
 
         // Mutate the number of internal layers with a small probability
-        if (random.NextDouble() < 0.15)
+        if (random.NextDouble() < mutateCof * 0.75)
         {
             if (random.NextDouble() < 0.5 && mutatedModel.InternalLayers.Count > 1) // Remove a layer
             {

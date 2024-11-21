@@ -88,7 +88,8 @@ public class FitModelJob : IFitModelJob
             LossFunc = jobDataMap.GetString(JobSettings.FitModel.LossFuncSettingName),
             Epochs = int.Parse(jobDataMap.GetString(JobSettings.FitModel.EpochsSettingName)),
             BatchSize = int.Parse(jobDataMap.GetString(JobSettings.FitModel.BatchSizeSettingName)),
-            WeigthPath = string.Format(StoragePath.WeightPath, _sessionId, _epocheNo, Guid.NewGuid())
+            WeigthPath = string.Format(StoragePath.WeightPath, _sessionId, _epocheNo, Guid.NewGuid()),
+            Alpha = float.Parse(jobDataMap.GetString(JobSettings.FitModel.AlphaSettingName))
         };
 
         var model = await _neuralNetworkModelService.GetModelByIdAsync(_modelId);

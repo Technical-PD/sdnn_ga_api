@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 using System;
 using System.Threading;
 using SdnnGa.Model.Models;
+using Microsoft.AspNetCore.Http;
+using System.Text.RegularExpressions;
+using SdnnGa.Services.DataModel;
 
 namespace SdnnGa.Services.Service;
 
@@ -15,6 +18,10 @@ public class DataService : IDataService
 {
     private readonly IStorage _storage;
     private readonly ISessionService _sessionService;
+
+    private const string FileExtensionRegex = "\\.[0-9a-z]+$";
+    private const string HD5ContentType = "x-hdf5";
+    private const string HD5Extentsion = "h5";
 
     public DataService(
         IStorage storage,
@@ -74,5 +81,51 @@ public class DataService : IDataService
         {
             return ServiceResult<Session>.FromUnexpectedError($"Unnexpected error occured on putting XData to the storage for session '{sessiongId}'. Message: '{ex.Message}'");
         }
+    }
+
+    public async Task<ServiceResult<IFormFile>> GetDataFromStorageAsync(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+        {
+            return ServiceResult<IFormFile>.FromError("FilePath is null or empty.");
+        }
+
+        try
+        {
+            var stream = await _storage.GetFileAsync(filePath);
+
+            if (stream == null)
+            {
+                return ServiceResult<IFormFile>.FromNotFound($"Data does not exist in storage.");
+            }
+
+            return ServiceResult<IFormFile>.FromSuccess(CreateFormFile(stream, filePath));
+        }
+        catch (Exception ex)
+        {
+            return ServiceResult<IFormFile>.FromUnexpectedError(ex.Message);
+        }
+    }
+
+    private string GetFileExtension(string fileName)
+    {
+        var regex = new Regex(FileExtensionRegex, RegexOptions.IgnoreCase);
+        return regex.Match(fileName).Value.TrimStart('.');
+    }
+
+    private IFormFile CreateFormFile(Stream stream, string fileName)
+    {
+        var ext = GetFileExtension(fileName);
+
+        var contentType = ext == HD5Extentsion ? $"{HD5ContentType}/hdf5" : $"application/{ext}";
+
+        var generatedFileName = $"{Path.GetFileNameWithoutExtension(fileName)}-{DateTime.UtcNow:HHmmss}.{ext}";
+
+        var memoryStream = new MemoryStream();
+        stream.CopyTo(memoryStream);
+        memoryStream.Position = 0;
+
+        var formFile = new CustomFormFile(memoryStream, generatedFileName, contentType);
+        return formFile;
     }
 }

@@ -1,4 +1,5 @@
-﻿using SdnnGa.Model.Enums;
+﻿using Microsoft.AspNetCore.Http;
+using SdnnGa.Model.Enums;
 using SdnnGa.Model.Models;
 using SdnnGa.Model.Services.Models.ServiceResult;
 using System.IO;
@@ -10,4 +11,6 @@ namespace SdnnGa.Model.Services;
 public interface IDataService
 {
     Task<ServiceResult<Session>> PutTrainDataAsync(string sessiongId, MemoryStream memoryStream, DataType dataType, CancellationToken cancellationToken = default);
+
+    Task<ServiceResult<IFormFile>> GetDataFromStorageAsync(string filePath);
 }

@@ -26,6 +26,7 @@ public class CreateModelJob : ICreateModelJob
     private string _sessionId;
     private string _epocheNo;
     private string _modelId;
+    private float _mutationCof;
 
     private readonly IRabbitMqClientCreateModelService _rabbitMqClient;
     private readonly INeuralNetworkModelService _networkModelService;
@@ -56,7 +57,7 @@ public class CreateModelJob : ICreateModelJob
         }
         else
         {
-            model = NeuralNetworkMutation.Mutate(_modelConfig);
+            model = NeuralNetworkMutation.Mutate(_modelConfig, _mutationCof);
         }
 
         string modelJson = JsonSerializer.Serialize(model);
@@ -78,6 +79,7 @@ public class CreateModelJob : ICreateModelJob
         var modelToUpdateResult = await _networkModelService.GetModelByIdAsync(_modelId);
 
         modelToUpdateResult.Entity.ModelConfigFileName = _modelStoragePath;
+        modelToUpdateResult.Entity.ModelConfigDotNetFileName = _modelNetStoragePath;
 
         await _networkModelService.UpdateModelAssync(modelToUpdateResult.Entity);
     }
@@ -107,6 +109,8 @@ public class CreateModelJob : ICreateModelJob
         _sessionId = jobDataMap.GetString(JobSettings.CreateModel.SessionIdSettingName);
         _epocheNo = jobDataMap.GetString(JobSettings.CreateModel.EpocheNoSettingName);
         _modelId = jobDataMap.GetString(JobSettings.CreateModel.ModelIdSettingName);
+
+        _mutationCof = float.Parse(jobDataMap.GetString(JobSettings.CreateModel.MutationCofSettingName));
 
         _modelNetStoragePath = string.Format(StoragePath.DotNetModelPath, _sessionId, _epocheNo, Guid.NewGuid());
         _modelStoragePath = string.Format(StoragePath.ModelPath, _sessionId, _epocheNo, Guid.NewGuid());

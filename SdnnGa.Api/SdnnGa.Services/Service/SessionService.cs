@@ -111,7 +111,7 @@ public class SessionService : ISessionService
 
         try
         {
-            var dbSession = await _dbRepository.GetByIdAsync(id);
+            var dbSession = await _dbRepository.GetByIdAsync(id, null, cancellationToken);
 
             if (dbSession == null)
             {
@@ -123,6 +123,30 @@ public class SessionService : ISessionService
         catch (Exception ex)
         {
             return ServiceResult<Session>.FromUnexpectedError($"UnespectedError ocured on obtaining session by Id. Exception message '{ex.Message}'.");
+        }
+    }
+
+    public async Task<ServiceResult<Session>> DeleteSessionAsync(string sessionId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            return ServiceResult<Session>.FromError($"Failed on deleting session by Id. Parammeter {nameof(sessionId)} can not be null or empty.");
+        }
+
+        try
+        {
+            var dbSession = await _dbRepository.DeleteAsync(sessionId,  cancellationToken);
+
+            if (dbSession == null)
+            {
+                return ServiceResult<Session>.FromNotFound($"Sessions with Id({sessionId}) was not found.");
+            }
+
+            return ServiceResult<Session>.FromSuccess(_mapper.Map<Session>(dbSession));
+        }
+        catch (Exception ex)
+        {
+            return ServiceResult<Session>.FromUnexpectedError($"UnespectedError ocured on deleting session by Id. Exception message '{ex.Message}'.");
         }
     }
 }

@@ -4,7 +4,6 @@ using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
 using System;
 using System.Collections.Concurrent;
 using System.Text;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace SdnnGa.Infrastructure.RabbitMq;
@@ -53,7 +52,10 @@ public class RabbitMqClient : IRabbitMqClientCreateModelService, IRabbitMqClient
             if (_pendingResponses.TryRemove(correlationId, out var tcs))
             {
                 var response = Encoding.UTF8.GetString(ea.Body.ToArray());
-                Console.WriteLine($"[x] Received response: {response}");
+
+                //Console.WriteLine($"[x] Received response: {response}");
+                Console.WriteLine($"[x] Received response!");
+
                 tcs.TrySetResult(response);
             }
         };
@@ -82,7 +84,9 @@ public class RabbitMqClient : IRabbitMqClientCreateModelService, IRabbitMqClient
 
         // Публікація повідомлення в чергу
         _channel.BasicPublish(exchange: "", routingKey: _requestQueue, basicProperties: props, body: body);
-        Console.WriteLine($"[x] Sent: {message}");
+        //Console.WriteLine($"[x] Sent: {message}");
+        Console.WriteLine($"[x] Sent: {_requestQueue}");
+
 
         try
         {

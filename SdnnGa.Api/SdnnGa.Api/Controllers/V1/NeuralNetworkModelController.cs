@@ -44,45 +44,4 @@ public class NeuralNetworkModelController : ControllerBase
 
         return Ok(result);
     }
-
-    [HttpGet("ModelCreateTest")]
-    public async Task<IActionResult> TestPythonModelCreate(string message, CancellationToken cancellationToken = default)
-    {
-        var testModelConfig = new ModelConfig
-        {
-            InputShape = [2],
-            InternalLayers = 
-            [
-                new Layer
-                {
-                    ActivationFunc = "relu",
-                    NeuronsCount = 5
-                },
-                new Layer
-                {
-                    ActivationFunc = "sigmoid",
-                    NeuronsCount = 10
-                },
-                new Layer
-                {
-                    ActivationFunc = "tanh",
-                    NeuronsCount = 7
-                },
-            ],
-            OutputLayer = new Layer
-            {
-                ActivationFunc = "tanh",
-                NeuronsCount = 2
-            }
-        };
-
-        var jsonData = JsonSerializer.Serialize(testModelConfig);
-
-        await _jobScheduler.ScheduleJobAsync<CreateModelJob>("CreateModelTest", new Dictionary<string, string>
-        {
-            { "modelConfig", jsonData }
-        });
-
-        return Ok();
-    }
 }
