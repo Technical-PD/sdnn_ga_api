@@ -9,4 +9,6 @@ public class ModelConfig
     public List<Layer> InternalLayers { get; set; }
 
     public Layer OutputLayer { get; set; }
+
+
 }

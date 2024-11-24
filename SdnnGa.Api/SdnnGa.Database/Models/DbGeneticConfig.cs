@@ -14,6 +14,9 @@ public class DbGeneticConfig : BaseModel
     public float MutationCof { get; set; }
 
     [Required]
+    public string SelectionCriterion { get; set; }
+
+    [Required]
     [ForeignKey("Session")]
     public string SessionId { get; set; }
 

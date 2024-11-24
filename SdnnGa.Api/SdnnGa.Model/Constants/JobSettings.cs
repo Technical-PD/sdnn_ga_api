@@ -27,7 +27,6 @@ public static class JobSettings
         public const string ModelIdSettingName = "model-id";
         public const string SessionIdSettingName = "session-id";
         public const string EpocheNoSettingName = "epoche-no";
-        public const string AlphaSettingName = "alpha";
     }
 
     public static class GeneticEpoche

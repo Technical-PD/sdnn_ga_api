@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
+using SdnnGa.Database.Models;
 
 namespace SdnnGa.Services.Service;
 
@@ -38,18 +39,15 @@ public class StatisticService : IStatisticService
                 return ServiceResult<List<NeuralNetworkModel>>.FromError($"Epoches does not exist for session with id='{sessionId}'");
             }
 
-            var bestModels = sessionEpochesResult.Entity
-                .OrderBy(ep => ep.EpochNo)
-                .Select(async epoch =>
-                {
-                    var bestModel = await _networkModelService.GetModelByEpochIdAsync(epoch.Id, cancellationToken);
-                    return bestModel.Entity.OrderBy(md => md.LossValue).FirstOrDefault();
-                }).ToList();
+            var bestModels = new List<NeuralNetworkModel>();
 
-            var results = await Task.WhenAll(bestModels);
+            foreach (var epoche in sessionEpochesResult.Entity)
+            {
+                var bestModel = await _networkModelService.GetModelByEpochIdAsync(epoche.Id, cancellationToken);
+                bestModels.Add(bestModel.Entity.OrderBy(md => md.LossValue).FirstOrDefault());
+            }
 
-
-            return ServiceResult<List<NeuralNetworkModel>>.FromSuccess(results.ToList());
+            return ServiceResult<List<NeuralNetworkModel>>.FromSuccess(bestModels);
         }
         catch (Exception ex)
         {
@@ -73,18 +71,15 @@ public class StatisticService : IStatisticService
                 return ServiceResult<List<NeuralNetworkModel>>.FromError($"Epoches does not exist for session with id='{sessionId}'");
             }
 
-            var bestModels = sessionEpochesResult.Entity
-                .OrderBy(ep => ep.EpochNo)
-                .Select(async epoch =>
-                {
-                    var bestModel = await _networkModelService.GetModelByEpochIdAsync(epoch.Id, cancellationToken);
-                    return bestModel.Entity.OrderBy(md => md.AccuracyValue).LastOrDefault();
-                }).ToList();
+            var bestModels = new List<NeuralNetworkModel>();
 
-            var results = await Task.WhenAll(bestModels);
+            foreach (var epoche in sessionEpochesResult.Entity)
+            {
+                var bestModel = await _networkModelService.GetModelByEpochIdAsync(epoche.Id, cancellationToken);
+                bestModels.Add(bestModel.Entity.OrderBy(md => md.AccuracyValue).LastOrDefault());
+            }
 
-
-            return ServiceResult<List<NeuralNetworkModel>>.FromSuccess(results.ToList());
+            return ServiceResult<List<NeuralNetworkModel>>.FromSuccess(bestModels);
         }
         catch (Exception ex)
         {

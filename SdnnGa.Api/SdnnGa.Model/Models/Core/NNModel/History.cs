@@ -10,4 +10,10 @@ public class History
 
     [JsonPropertyName("loss")]
     public List<float> Loss { get; set; }
+
+    [JsonPropertyName("val_accuracy")]
+    public List<float> ValAccuracy { get; set; }
+
+    [JsonPropertyName("val_loss")]
+    public List<float> ValLoss { get; set; }
 }

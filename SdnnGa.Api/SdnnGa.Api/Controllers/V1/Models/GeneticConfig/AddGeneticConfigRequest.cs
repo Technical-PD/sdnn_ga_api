@@ -3,6 +3,10 @@
 public class AddGeneticConfigRequest
 {
     public string Name { get; set; }
+
     public int MaxEpoches { get; set; }
+
     public float MutationCof { get; set; }
+
+    public string SelectionCriterion { get; set; }
 }

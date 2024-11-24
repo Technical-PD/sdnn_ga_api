@@ -70,17 +70,17 @@ public class GeneticConfigService : IGeneticConfigService
         }
     }
 
-    public async Task<ServiceResult<IEnumerable<GeneticConfig>>> GetAllBySessionIdAsync(string sessionId, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<GeneticConfig>> GetAllBySessionIdAsync(string sessionId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var dbGeneticConfigs = (await _dbRepository.GetByFieldAsync(nameof(Epoch.SessionId), sessionId, null, cancellationToken)).ToList();
+            var dbGeneticConfigs = await _dbRepository.GetByFieldAsync(nameof(Epoch.SessionId), sessionId, null, cancellationToken);
 
-            return ServiceResult<IEnumerable<GeneticConfig>>.FromSuccess(dbGeneticConfigs.Select(geneticConfig => _mapper.Map<GeneticConfig>(geneticConfig)));
+            return ServiceResult<GeneticConfig>.FromSuccess(_mapper.Map<GeneticConfig>(dbGeneticConfigs.FirstOrDefault()));
         }
         catch (Exception ex)
         {
-            return ServiceResult<IEnumerable<GeneticConfig>>.FromUnexpectedError($"Unexpected error occured on obaitning genetic configs. Message: '{ex.Message}'.");
+            return ServiceResult<GeneticConfig>.FromUnexpectedError($"Unexpected error occured on obaitning genetic configs. Message: '{ex.Message}'.");
         }
     }
 }

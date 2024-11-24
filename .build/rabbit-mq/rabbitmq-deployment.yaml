@@ -35,3 +35,16 @@ spec:
   selector:
     app: rabbitmq
   type: NodePort
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-exporter-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9419
+      targetPort: 9419
+  selector:
+    app: rabbitmq-exporter

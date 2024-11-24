@@ -8,13 +8,7 @@ public class FitConfig : BaseModel
 
     public string FitMethod { get; set; }
 
-    public string[] MetricFuncs { get; set; }
-
     public string LossFunc { get; set; }
 
-    public float Alpha { get; set; }
-
     public string SessionId { get; set; }
-
-    public Session Session { get; set; }
 }

@@ -8,7 +8,7 @@ public class GeneticConfig : BaseModel
 
     public float MutationCof { get; set; }
 
-    public string SessionId { get; set; }
+    public string SelectionCriterion { get; set; }
 
-    public Session Session { get; set; }
+    public string SessionId { get; set; }
 }

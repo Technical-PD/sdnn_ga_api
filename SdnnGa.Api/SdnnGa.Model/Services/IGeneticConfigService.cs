@@ -12,5 +12,5 @@ public interface IGeneticConfigService
 
     Task<ServiceResult<GeneticConfig>> GetByIdAsync(string geneticConfigId, CancellationToken cancellationToken = default);
 
-    Task<ServiceResult<IEnumerable<GeneticConfig>>> GetAllBySessionIdAsync(string sessionId, CancellationToken cancellationToken = default);
+    Task<ServiceResult<GeneticConfig>> GetAllBySessionIdAsync(string sessionId, CancellationToken cancellationToken = default);
 }

@@ -61,6 +61,22 @@ public class GeneticEpochJob : IGeneticEpochJob
             return;
         }
 
+        var geneticConfigResult = await _geneticConfigService.GetAllBySessionIdAsync(_sessionId);
+
+        if (geneticConfigResult.IsError)
+        {
+            Console.WriteLine($"Error on obtaining genetic config in Genetic Flow. Message: '{geneticConfigResult.Message}'");
+            return;
+        }
+
+        var currentGeneticConfig = geneticConfigResult.Entity;
+
+        if (currentGeneticConfig == null)
+        {
+            Console.WriteLine($"Genetic Config does not exist for this session.");
+            return;
+        }
+
         if (sessionEpochesResult.Entity != null && sessionEpochesResult.Entity.Any())
         {
             var latestEpoch = sessionEpochesResult.Entity.OrderBy(ep => ep.EpochNo).LastOrDefault();
@@ -73,7 +89,16 @@ public class GeneticEpochJob : IGeneticEpochJob
                 return;
             }
 
-            var bestModel = epocheModelResult.Entity.OrderBy(md => md.AccuracyValue).LastOrDefault();
+            NeuralNetworkModel bestModel = null;
+
+            if (currentGeneticConfig.SelectionCriterion == SelectionCriterion.ByAccuracy)
+            {
+                bestModel = epocheModelResult.Entity.OrderBy(md => md.LossValue).FirstOrDefault();
+            }
+            else
+            {
+                bestModel = epocheModelResult.Entity.OrderBy(md => md.AccuracyValue).LastOrDefault();
+            }
 
             modelConfigNetPath = bestModel?.ModelConfigDotNetFileName;
 
@@ -105,22 +130,6 @@ public class GeneticEpochJob : IGeneticEpochJob
         if (fitConfigResult.IsError)
         {
             Console.WriteLine($"Error on obtaining fit config in Genetic Flow. Message: '{fitConfigResult.Message}'");
-            return;
-        }
-
-        var geneticConfigResult = await _geneticConfigService.GetAllBySessionIdAsync(_sessionId);
-
-        if (fitConfigResult.IsError)
-        {
-            Console.WriteLine($"Error on obtaining fit config in Genetic Flow. Message: '{fitConfigResult.Message}'");
-            return;
-        }
-
-        var currentGeneticConfig = geneticConfigResult.Entity.FirstOrDefault();
-
-        if (currentGeneticConfig == null)
-        {
-            Console.WriteLine($"Genetic Config does not exist for this session.");
             return;
         }
 
@@ -159,11 +168,10 @@ public class GeneticEpochJob : IGeneticEpochJob
 
             var settingModelFitJob = new Dictionary<string, string>
             {
-                { JobSettings.FitModel.AlphaSettingName, fitConfigResult.Entity.Alpha.ToString() },
                 { JobSettings.FitModel.BatchSizeSettingName, "50" },
                 { JobSettings.FitModel.EpocheNoSettingName, currentEpochResult.Entity.EpochNo.ToString() },
                 { JobSettings.FitModel.EpochsSettingName, fitConfigResult.Entity.MaxEpoches.ToString() },
-                { JobSettings.FitModel.IsLearnWithValidationSettingName, "False" },
+                { JobSettings.FitModel.IsLearnWithValidationSettingName, "True" },
                 { JobSettings.FitModel.LossFuncSettingName, fitConfigResult.Entity.LossFunc },
                 { JobSettings.FitModel.MinDeltaSettingName, "0.02" },
                 { JobSettings.FitModel.ModelIdSettingName, createdModelResult.Entity.Id },

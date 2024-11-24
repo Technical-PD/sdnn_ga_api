@@ -21,8 +21,4 @@ public class NeuralNetworkModel : BaseModel
     public string SessionId { get; set; }
 
     public string EpocheId { get; set; }
-
-    public Session Session { get; set; }
-
-    public Epoch Epoch { get; set; }
 }

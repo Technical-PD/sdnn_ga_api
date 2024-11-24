@@ -23,6 +23,7 @@ public class FitModelJob : IFitModelJob
     private string _fitModelJobConfig;
     private string _sessionId;
     private string _epocheNo;
+    private string _weigthPath;
 
     public FitModelJob(
         IRabbitMqClientFitModelService rabbitMqClient,
@@ -59,6 +60,7 @@ public class FitModelJob : IFitModelJob
             modelToUpdateResult.Entity.AccuracyValue = fitResult.Accuracy;
             modelToUpdateResult.Entity.IsTrained = true;
             modelToUpdateResult.Entity.FitHistory = JsonSerializer.Serialize(fitResult.History);
+            modelToUpdateResult.Entity.WeightsFileName = _weigthPath;
 
             await _neuralNetworkModelService.UpdateModelAssync(modelToUpdateResult.Entity);
 
@@ -77,6 +79,7 @@ public class FitModelJob : IFitModelJob
         _modelId = jobDataMap.GetString(JobSettings.FitModel.ModelIdSettingName);
         _sessionId = jobDataMap.GetString(JobSettings.FitModel.SessionIdSettingName);
         _epocheNo = jobDataMap.GetString(JobSettings.FitModel.EpocheNoSettingName);
+        _weigthPath = string.Format(StoragePath.WeightPath, _sessionId, _epocheNo, Guid.NewGuid());
 
         var fitModelJobConfig = new FitModelJobConfig
         {
@@ -88,8 +91,7 @@ public class FitModelJob : IFitModelJob
             LossFunc = jobDataMap.GetString(JobSettings.FitModel.LossFuncSettingName),
             Epochs = int.Parse(jobDataMap.GetString(JobSettings.FitModel.EpochsSettingName)),
             BatchSize = int.Parse(jobDataMap.GetString(JobSettings.FitModel.BatchSizeSettingName)),
-            WeigthPath = string.Format(StoragePath.WeightPath, _sessionId, _epocheNo, Guid.NewGuid()),
-            Alpha = float.Parse(jobDataMap.GetString(JobSettings.FitModel.AlphaSettingName))
+            WeigthPath = _weigthPath
         };
 
         var model = await _neuralNetworkModelService.GetModelByIdAsync(_modelId);

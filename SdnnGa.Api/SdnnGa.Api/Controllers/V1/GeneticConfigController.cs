@@ -42,6 +42,7 @@ public class GeneticConfigController : ControllerBase
             Name = addGeneticConfigRequest.Name,
             MaxEpoches = addGeneticConfigRequest.MaxEpoches,
             MutationCof = addGeneticConfigRequest.MutationCof,
+            SelectionCriterion = addGeneticConfigRequest.SelectionCriterion,
         };
 
         var sessionResult = await _geneticConfigService.AddGeneticConfigAsync(sessionId, geneticConfig, cancellationToken);

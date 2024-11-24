@@ -25,8 +25,6 @@ public class FitConfigController : ControllerBase
         {
             SessionId = sessionId,
             LossFunc = createFitConfigRequest.LossFunc,
-            Alpha = createFitConfigRequest.Alpha,
-            MetricFuncs = createFitConfigRequest.MetricFuncs,
             MaxEpoches = createFitConfigRequest.MaxEpoches,
             FitMethod = createFitConfigRequest.FitMethod,
             Name = createFitConfigRequest.Name,

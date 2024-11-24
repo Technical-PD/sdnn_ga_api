@@ -1,5 +1,4 @@
 ﻿using SdnnGa.Model.Database.Models;
-using System.Collections.Generic;
 
 namespace SdnnGa.Model.Models;
 
@@ -12,8 +11,4 @@ public class Epoch : BaseModel
     public int EpochNo { get; set; }
 
     public string SessionId { get; set; }
-
-    public ICollection<NeuralNetworkModel> NeuralNetworkModel { get; set; }
-
-    public Session Session { get; set; }
 }

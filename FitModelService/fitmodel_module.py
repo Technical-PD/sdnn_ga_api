@@ -5,6 +5,7 @@ import io
 import os
 import pandas as pd
 import base64
+import numpy as np
 from azure.storage.blob import BlobServiceClient
 
 connection_string = "DefaultEndpointsProtocol=https;AccountName=sdnngamodelstorage;AccountKey=tihLTqkIHB6IHz8qFt+K9G2T/UnVRtNBVgOImJy3AfX2KOvrJhEsnTppxEFeXWYz1MUeRD3Gdh8V+AStTqeK2w==;EndpointSuffix=core.windows.net"
@@ -15,8 +16,19 @@ container_client = blob_service_client.get_container_client(container_name)
 
 def fit_model(model_config_json):
     # Prepare training data
-    nd_array_x = pd.read_csv(io.StringIO(model_config_json['XTrain']), header=0).values.astype(float)
-    nd_array_y = pd.read_csv(io.StringIO(model_config_json['YTrain']), header=0).values.astype(float)
+    nd_array_x_not_shuffled = pd.read_csv(io.StringIO(model_config_json['XTrain']), header=0).values.astype(float)
+    nd_array_y_not_shuffled = pd.read_csv(io.StringIO(model_config_json['YTrain']), header=0).values.astype(float)
+
+    # Перевірка розмірів масивів (щоб впевнитися, що вони мають однакову кількість рядків)
+    assert len(nd_array_x_not_shuffled) == len(nd_array_y_not_shuffled), "Масиви мають різну кількість рядків!"
+
+    # Створення індексів і перемішування
+    indices = np.arange(len(nd_array_x_not_shuffled))
+    np.random.shuffle(indices)
+
+    # Перемішування обох масивів однаковим чином
+    nd_array_x = nd_array_x_not_shuffled[indices]
+    nd_array_y = nd_array_y_not_shuffled[indices]
 
     train_x = nd_array_x
     train_y = nd_array_y
