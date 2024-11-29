@@ -3,7 +3,8 @@ import useGetSessionData from '../hooks/useGetSessionData'
 import Loading from './Loading'
 import { List, message } from 'antd'
 import dayjs from 'dayjs'
-import { Column } from '@ant-design/charts'
+import { Column } from '@ant-design/plots'
+import { Bar } from '@ant-design/charts'
 import { useEffect, useState } from 'react'
 import apiCall from '../utils/apiCall'
 
@@ -48,7 +49,7 @@ const EpochList = () => {
   const configAcc = {
     data: chartEntity || [],
     yField: 'accuracyValue',
-    colorField: 'index',
+    xField: 'index',
     group: true,
     style: {
       inset: 5
@@ -58,7 +59,7 @@ const EpochList = () => {
   const configLoss = {
     data: chartEntity || [],
     yField: 'lossValue',
-    colorField: 'index',
+    xField: 'index',
     group: true,
     style: {
       inset: 5

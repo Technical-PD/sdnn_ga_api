@@ -131,7 +131,7 @@ public class FitConfigService : IFitConfigService
 
         try
         {
-            var dbSession = await _dbRepository.GetByFieldAsync("SessionId", sessionId, null, cancellationToken);
+            var dbSession = await _dbRepository.GetByFieldAsync("SessionId", sessionId, true, null, cancellationToken);
 
             if (dbSession == null)
             {

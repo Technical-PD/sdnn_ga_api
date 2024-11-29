@@ -34,7 +34,7 @@ public class EpochService : IEpochService
 
         try
         {
-            var epoches = (await _dbRepository.GetByFieldAsync(nameof(Epoch.SessionId), sessionId, null, cancellationToken)).ToList();
+            var epoches = (await _dbRepository.GetByFieldAsync(nameof(Epoch.SessionId), sessionId, true, null, cancellationToken)).ToList();
 
             var newDbEpoch = new DbEpoch
             {
@@ -98,7 +98,7 @@ public class EpochService : IEpochService
     {
         try
         {
-            var dbEpoches = (await _dbRepository.GetByFieldAsync(nameof(Epoch.SessionId), sessionId, null, cancellationToken)).ToList();
+            var dbEpoches = (await _dbRepository.GetByFieldAsync(nameof(Epoch.SessionId), sessionId, true, null, cancellationToken)).ToList();
 
             return ServiceResult<IEnumerable<Epoch>>.FromSuccess(dbEpoches.Select(epoche => _mapper.Map<Epoch>(epoche)));
         }

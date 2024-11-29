@@ -9,7 +9,11 @@ public static class JobSettings
         public const string SessionIdSettingName = "session-id";
         public const string EpocheNoSettingName = "epoche-no";
         public const string ModelIdSettingName = "model-id";
-        public const string MutationCofSettingName = "mutation-cof";
+        public const string ActFuncMutationProbSettingName = "act-func-mutation-prob";
+        public const string CountOfNeuronMutationProbSettingName = "count-of-neurons-mutation-prob";
+        public const string CountOfInternalLayerMutationProbSettingName = "count-of-internal-layers-mutation-prob";
+        public const string BiasMutationProbSettingName = "bias-mutation-prob";
+        public const string ModelNoSettingName = "modelNo";
     }
 
     public static class FitModel
@@ -33,6 +37,7 @@ public static class JobSettings
     {
         public const string SessionIdSettingName = "session-id";
         public const string ModelRangeConfigSettingName = "model-range-config";
-        public const string ModelCountSettingName = "model-count";
+        //public const string StopAccValueSettingName = "stop-acc-value";
+        //public const string StopLossValueSettingName = "stop-loss-value";
     }
 }

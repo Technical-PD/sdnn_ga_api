@@ -26,7 +26,11 @@ public class CreateModelJob : ICreateModelJob
     private string _sessionId;
     private string _epocheNo;
     private string _modelId;
-    private float _mutationCof;
+    private float _actFuncMutationProb;
+    private float _countOfNeuronMutationProb;
+    private float _countOfInternalLayerMutationProb;
+    private float _biasMutationProb;
+    private int _modelNo;
 
     private readonly IRabbitMqClientCreateModelService _rabbitMqClient;
     private readonly INeuralNetworkModelService _networkModelService;
@@ -49,15 +53,20 @@ public class CreateModelJob : ICreateModelJob
     {
         await InizializeSettingValuesAsync(context);
 
-        ModelConfig model = null;
+        ModelConfig model;
         
-        if (_modelConfig == null)
+        if (_epocheNo == "0")
         {
             model = _modelGenerator.GenerateRandomModelConfig(_modelRangeConfig);
         }
         else
         {
-            model = NeuralNetworkMutation.Mutate(_modelConfig, _mutationCof);
+            model = NeuralNetworkMutation.Mutate(
+                model: _modelConfig,
+                actFuncProb: _actFuncMutationProb,
+                countOfNeuronProb: _countOfNeuronMutationProb,
+                countOfInternalLayerProb: _countOfInternalLayerMutationProb,
+                biasProb: _biasMutationProb);
         }
 
         string modelJson = JsonSerializer.Serialize(model);
@@ -110,9 +119,14 @@ public class CreateModelJob : ICreateModelJob
         _epocheNo = jobDataMap.GetString(JobSettings.CreateModel.EpocheNoSettingName);
         _modelId = jobDataMap.GetString(JobSettings.CreateModel.ModelIdSettingName);
 
-        _mutationCof = float.Parse(jobDataMap.GetString(JobSettings.CreateModel.MutationCofSettingName));
+        _actFuncMutationProb = float.Parse(jobDataMap.GetString(JobSettings.CreateModel.ActFuncMutationProbSettingName));
+        _countOfNeuronMutationProb = float.Parse(jobDataMap.GetString(JobSettings.CreateModel.CountOfNeuronMutationProbSettingName));
+        _countOfInternalLayerMutationProb = float.Parse(jobDataMap.GetString(JobSettings.CreateModel.CountOfInternalLayerMutationProbSettingName));
+        _biasMutationProb = float.Parse(jobDataMap.GetString(JobSettings.CreateModel.BiasMutationProbSettingName));
+        
+        _modelNo = int.Parse(jobDataMap.GetString(JobSettings.CreateModel.ModelNoSettingName));
 
-        _modelNetStoragePath = string.Format(StoragePath.DotNetModelPath, _sessionId, _epocheNo, Guid.NewGuid());
-        _modelStoragePath = string.Format(StoragePath.ModelPath, _sessionId, _epocheNo, Guid.NewGuid());
+        _modelNetStoragePath = string.Format(StoragePath.DotNetModelPath, _sessionId, _epocheNo, _modelNo);
+        _modelStoragePath = string.Format(StoragePath.ModelPath, _sessionId, _epocheNo, _modelNo);
     }
 }

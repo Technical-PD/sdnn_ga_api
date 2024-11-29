@@ -9,7 +9,7 @@ public static class NeuralNetworkMutation
     private static Random random = new Random(DateTime.UtcNow.Millisecond);
     private static List<string> activationFunctions = new List<string> { "relu", "sigmoid", "tanh", "softmax", "linear" };
 
-    public static ModelConfig Mutate(ModelConfig model, float mutateCof)
+    public static ModelConfig Mutate(ModelConfig model, float actFuncProb, float countOfNeuronProb, float countOfInternalLayerProb, float biasProb)
     {
         // Create a copy of the model to apply mutations
         var mutatedModel = new ModelConfig
@@ -25,7 +25,7 @@ public static class NeuralNetworkMutation
         };
 
         // Mutate the output layer's activation function with a small probability
-        if (random.NextDouble() < mutateCof * 0.5)
+        if (random.NextDouble() < actFuncProb)
         {
             mutatedModel.OutputLayer.ActivationFunc = GetRandomActivationFunction(mutatedModel.OutputLayer.ActivationFunc);
         }
@@ -34,7 +34,7 @@ public static class NeuralNetworkMutation
         for (int i = 0; i < mutatedModel.InternalLayers.Count; i++)
         {
             // Mutate layer neurons count with some probability
-            if (random.NextDouble() < mutateCof)
+            if (random.NextDouble() < countOfNeuronProb)
             {
                 int minNeurons = Math.Max(1, mutatedModel.InternalLayers[i].NeuronsCount - 10);
                 int maxNeurons = mutatedModel.InternalLayers[i].NeuronsCount + 10;
@@ -42,14 +42,14 @@ public static class NeuralNetworkMutation
             }
 
             // Mutate layer activation function with some probability
-            if (random.NextDouble() < mutateCof * 0.5)
+            if (random.NextDouble() < actFuncProb)
             {
                 mutatedModel.InternalLayers[i].ActivationFunc = GetRandomActivationFunction(mutatedModel.InternalLayers[i].ActivationFunc);
             }
         }
 
         // Mutate the number of internal layers with a small probability
-        if (random.NextDouble() < mutateCof * 0.75)
+        if (random.NextDouble() < countOfInternalLayerProb)
         {
             if (random.NextDouble() < 0.5 && mutatedModel.InternalLayers.Count > 1) // Remove a layer
             {
@@ -59,12 +59,14 @@ public static class NeuralNetworkMutation
             else // Add a new layer
             {
                 int averageNeurons = GetAverageNeurons(mutatedModel.InternalLayers);
+
                 var newLayer = new Layer
                 {
                     NeuronsCount = random.Next(Math.Max(1, averageNeurons - 5), averageNeurons + 6),
                     ActivationFunc = activationFunctions[random.Next(activationFunctions.Count)],
-                    UseBias = random.NextDouble() < 0.5
+                    UseBias = random.NextDouble() < countOfInternalLayerProb
                 };
+
                 int insertIndex = random.Next(mutatedModel.InternalLayers.Count + 1);
                 mutatedModel.InternalLayers.Insert(insertIndex, newLayer);
             }
@@ -76,6 +78,7 @@ public static class NeuralNetworkMutation
     private static string GetRandomActivationFunction(string currentFunction)
     {
         string newFunction;
+
         do
         {
             newFunction = activationFunctions[random.Next(activationFunctions.Count)];
@@ -86,12 +89,18 @@ public static class NeuralNetworkMutation
 
     private static int GetAverageNeurons(List<Layer> layers)
     {
-        if (layers.Count == 0) return 10;
+        if (layers.Count == 0)
+        {
+            return 10;
+        }
+
         int totalNeurons = 0;
+
         foreach (var layer in layers)
         {
             totalNeurons += layer.NeuronsCount;
         }
+
         return totalNeurons / layers.Count;
     }
 }

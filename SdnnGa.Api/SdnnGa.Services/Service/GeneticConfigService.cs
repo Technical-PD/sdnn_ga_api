@@ -74,7 +74,7 @@ public class GeneticConfigService : IGeneticConfigService
     {
         try
         {
-            var dbGeneticConfigs = await _dbRepository.GetByFieldAsync(nameof(Epoch.SessionId), sessionId, null, cancellationToken);
+            var dbGeneticConfigs = await _dbRepository.GetByFieldAsync(nameof(Epoch.SessionId), sessionId, true, null, cancellationToken);
 
             return ServiceResult<GeneticConfig>.FromSuccess(_mapper.Map<GeneticConfig>(dbGeneticConfigs.FirstOrDefault()));
         }

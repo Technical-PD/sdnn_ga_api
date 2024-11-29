@@ -91,7 +91,7 @@ public class NeuralNetworkModelService : INeuralNetworkModelService
         }
     }
 
-    public async Task<ServiceResult<List<NeuralNetworkModel>>> GetModelByEpochIdAsync(string epochId, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<List<NeuralNetworkModel>>> GetModelByEpochIdAsync(string epochId, bool useTracking = true, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(epochId))
         {
@@ -100,7 +100,7 @@ public class NeuralNetworkModelService : INeuralNetworkModelService
 
         try
         {
-            var createdDbModel = await _dbRepository.GetByFieldAsync("EpocheId", epochId, null, cancellationToken);
+            var createdDbModel = await _dbRepository.GetByFieldAsync("EpocheId", epochId, useTracking, null, cancellationToken);
 
             var modelList = createdDbModel.Select(modelDb => _mapper.Map<NeuralNetworkModel>(modelDb)).ToList();
 

@@ -21,15 +21,33 @@ public class GeneticConfigController : ControllerBase
     [HttpGet("BySession/{sessionId}")]
     public async Task<IActionResult> GetBySessionId(string sessionId, CancellationToken cancellationToken = default)
     {
-        var sessionsResult = await _geneticConfigService.GetAllBySessionIdAsync(sessionId, cancellationToken);
+        var sessionResult = await _geneticConfigService.GetAllBySessionIdAsync(sessionId, cancellationToken);
 
-        return Ok(sessionsResult);
+        if (sessionResult != null && sessionResult.IsSuccessful)
+        {
+            sessionResult.Entity.ActFuncMutationProb *= 100;
+            sessionResult.Entity.CountOfNeuronMutationProb *= 100;
+            sessionResult.Entity.CountOfInternalLayerMutationProb *= 100;
+            sessionResult.Entity.BiasMutationProb *= 100;
+            sessionResult.Entity.StopAccValue *= 100;
+        }
+
+        return Ok(sessionResult);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id, CancellationToken cancellationToken = default)
     {
         var sessionResult = await _geneticConfigService.GetByIdAsync(id, cancellationToken);
+
+        if (sessionResult != null && sessionResult.IsSuccessful)
+        {
+            sessionResult.Entity.ActFuncMutationProb *= 100;
+            sessionResult.Entity.CountOfNeuronMutationProb *= 100;
+            sessionResult.Entity.CountOfInternalLayerMutationProb *= 100;
+            sessionResult.Entity.BiasMutationProb *= 100;
+            sessionResult.Entity.StopAccValue *= 100;
+        }
         
         return Ok(sessionResult);
     }
@@ -41,7 +59,13 @@ public class GeneticConfigController : ControllerBase
         {
             Name = addGeneticConfigRequest.Name,
             MaxEpoches = addGeneticConfigRequest.MaxEpoches,
-            MutationCof = addGeneticConfigRequest.MutationCof,
+            ActFuncMutationProb = addGeneticConfigRequest.ActFuncMutationProb / 100,
+            BiasMutationProb = addGeneticConfigRequest.BiasMutationProb / 100,
+            CountOfInternalLayerMutationProb = addGeneticConfigRequest.CountOfInternalLayerMutationProb / 100,
+            CountOfNeuronMutationProb = addGeneticConfigRequest.CountOfNeuronMutationProb / 100,
+            StopAccValue = addGeneticConfigRequest.StopAccValue / 100,
+            StopLossValue = addGeneticConfigRequest.StopLossValue,
+            CountOfModelsInEpoch = addGeneticConfigRequest.CountOfModelsInEpoch,
             SelectionCriterion = addGeneticConfigRequest.SelectionCriterion,
         };
 

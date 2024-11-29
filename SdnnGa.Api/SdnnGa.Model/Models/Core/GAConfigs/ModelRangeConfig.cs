@@ -2,8 +2,6 @@
 
 public class ModelRangeConfig
 {
-    public int CountOfModels { get; set; }
-
     public int InputCount { get; set; }
 
     public int OutputCount { get; set; }

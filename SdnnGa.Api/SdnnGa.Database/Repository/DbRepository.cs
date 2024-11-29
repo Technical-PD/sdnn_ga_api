@@ -32,7 +32,7 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
         }
     }
 
-    public async Task<IEnumerable<T>> GetByFieldAsync(string fieldName, string fieldValue, Func<IQueryable<T>, IQueryable<T>> include = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<T>> GetByFieldAsync(string fieldName, string fieldValue, bool useTracking = true, Func<IQueryable<T>, IQueryable<T>> include = null, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -43,7 +43,21 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
                 query = include(query);
             }
 
-            var entities = await query.Where(e => EF.Property<string>(e, fieldName) == fieldValue).ToListAsync();
+            List<T> entities;
+
+            if (useTracking)
+            {
+                entities = await query
+                    .Where(e => EF.Property<string>(e, fieldName) == fieldValue)
+                    .ToListAsync();
+            }
+            else
+            {
+                entities = await query
+                    .AsNoTracking()
+                    .Where(e => EF.Property<string>(e, fieldName) == fieldValue)
+                    .ToListAsync();
+            }
 
             if (entities == null)
             {

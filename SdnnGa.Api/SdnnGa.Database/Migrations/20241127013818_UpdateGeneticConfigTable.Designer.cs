@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SdnnGa.Database;
@@ -11,9 +12,11 @@ using SdnnGa.Database;
 namespace SdnnGa.Database.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    partial class ApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241127013818_UpdateGeneticConfigTable")]
+    partial class UpdateGeneticConfigTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -144,12 +147,6 @@ namespace SdnnGa.Database.Migrations
                     b.Property<string>("SessionId")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<float>("StopAccValue")
-                        .HasColumnType("real");
-
-                    b.Property<float>("StopLossValue")
-                        .HasColumnType("real");
 
                     b.HasKey("Id");
 

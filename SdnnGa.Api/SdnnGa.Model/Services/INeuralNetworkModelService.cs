@@ -14,7 +14,7 @@ public interface INeuralNetworkModelService
 
     Task<ServiceResult<NeuralNetworkModel>> GetModelByIdAsync(string modelId, CancellationToken cancellationToken = default);
 
-    Task<ServiceResult<List<NeuralNetworkModel>>> GetModelByEpochIdAsync(string epochId, CancellationToken cancellationToken = default);
+    Task<ServiceResult<List<NeuralNetworkModel>>> GetModelByEpochIdAsync(string epochId, bool useTracking = true, CancellationToken cancellationToken = default);
 
     Task<ServiceResult<List<NeuralNetworkModel>>> GetAllModelsAsync(CancellationToken cancellationToken = default);
 }

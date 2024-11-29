@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
-using SdnnGa.Database.Models;
 
 namespace SdnnGa.Services.Service;
 
@@ -23,7 +22,9 @@ public class StatisticService : IStatisticService
         _epochService = epochService;
     }
 
-    public async Task<ServiceResult<List<NeuralNetworkModel>>> GetBestModelInSessionByLossAsync(string sessionId, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<List<NeuralNetworkModel>>> GetBestModelInSessionByLossAsync(
+        string sessionId,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(sessionId))
         {
@@ -43,7 +44,7 @@ public class StatisticService : IStatisticService
 
             foreach (var epoche in sessionEpochesResult.Entity)
             {
-                var bestModel = await _networkModelService.GetModelByEpochIdAsync(epoche.Id, cancellationToken);
+                var bestModel = await _networkModelService.GetModelByEpochIdAsync(epoche.Id, true, cancellationToken);
                 bestModels.Add(bestModel.Entity.OrderBy(md => md.LossValue).FirstOrDefault());
             }
 
@@ -55,11 +56,14 @@ public class StatisticService : IStatisticService
         }
     }
 
-    public async Task<ServiceResult<List<NeuralNetworkModel>>> GetBestModelInSessionByAccuracyAsync(string sessionId, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<List<NeuralNetworkModel>>> GetBestModelInSessionByAccuracyAsync(
+        string sessionId,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(sessionId))
         {
-            return ServiceResult<List<NeuralNetworkModel>>.FromError($"Argument error. Argument {nameof(sessionId)} can not be null or empty");
+            return ServiceResult<List<NeuralNetworkModel>>.FromError($"Argument error. " +
+                $"Argument {nameof(sessionId)} can not be null or empty");
         }
 
         try
@@ -68,14 +72,15 @@ public class StatisticService : IStatisticService
 
             if (!sessionEpochesResult.IsSuccessful)
             {
-                return ServiceResult<List<NeuralNetworkModel>>.FromError($"Epoches does not exist for session with id='{sessionId}'");
+                return ServiceResult<List<NeuralNetworkModel>>.FromError(
+                    $"Epoches does not exist for session with id='{sessionId}'");
             }
 
             var bestModels = new List<NeuralNetworkModel>();
 
             foreach (var epoche in sessionEpochesResult.Entity)
             {
-                var bestModel = await _networkModelService.GetModelByEpochIdAsync(epoche.Id, cancellationToken);
+                var bestModel = await _networkModelService.GetModelByEpochIdAsync(epoche.Id, true, cancellationToken);
                 bestModels.Add(bestModel.Entity.OrderBy(md => md.AccuracyValue).LastOrDefault());
             }
 
@@ -83,7 +88,8 @@ public class StatisticService : IStatisticService
         }
         catch (Exception ex)
         {
-            return ServiceResult<List<NeuralNetworkModel>>.FromUnexpectedError($"Unexpected error was occured on obtaining statistic from session. Message: '{ex.Message}'");
+            return ServiceResult<List<NeuralNetworkModel>>.FromUnexpectedError(
+                $"Unexpected error was occured on obtaining statistic from session. Message: '{ex.Message}'");
         }
     }
 }

@@ -1,17 +1,18 @@
-﻿using Quartz;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Quartz.Impl.Matchers;
+using Quartz;
 using SdnnGa.Core.Listeners;
 using SdnnGa.Model.Constants;
 using SdnnGa.Model.Core.Interfaces;
 using SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
-using SdnnGa.Model.Models;
 using SdnnGa.Model.Models.Core.GAConfigs;
+using SdnnGa.Model.Models;
 using SdnnGa.Model.Services;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System;
 
 namespace SdnnGa.Core.Jobs;
 
@@ -24,10 +25,10 @@ public class GeneticEpochJob : IGeneticEpochJob
     private readonly INeuralNetworkModelService _networkModelService;
     private readonly ISchedulerService _schedulerService;
     private readonly IGeneticConfigService _geneticConfigService;
+    private readonly IServiceProvider _serviceProvider;
 
     private ModelRangeConfig _modelRangeConfig;
     private string _sessionId;
-    private int _modelCount;
 
     public GeneticEpochJob(
         IJobScheduler jobScheduler,
@@ -36,7 +37,8 @@ public class GeneticEpochJob : IGeneticEpochJob
         IFitConfigService fitConfigService,
         INeuralNetworkModelService networkModelService,
         ISchedulerService schedulerService,
-        IGeneticConfigService geneticConfigService)
+        IGeneticConfigService geneticConfigService,
+        IServiceProvider serviceProvider)
     {
         _epochService = epochService;
         _sessionService = sessionService;
@@ -45,6 +47,7 @@ public class GeneticEpochJob : IGeneticEpochJob
         _jobScheduler = jobScheduler;
         _schedulerService = schedulerService;
         _geneticConfigService = geneticConfigService;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task Execute(IJobExecutionContext context)
@@ -137,7 +140,7 @@ public class GeneticEpochJob : IGeneticEpochJob
 
         var childJobs = new List<IJobDetail>();
 
-        for (int i = 0; i < _modelCount; i++)
+        for (int i = 0; i < currentGeneticConfig.CountOfModelsInEpoch; i++)
         {
             string modelConfigJson = string.Empty;
 
@@ -163,7 +166,11 @@ public class GeneticEpochJob : IGeneticEpochJob
                 { JobSettings.CreateModel.SessionIdSettingName, _sessionId },
                 { JobSettings.CreateModel.EpocheNoSettingName, currentEpochResult.Entity.EpochNo.ToString() },
                 { JobSettings.CreateModel.ModelIdSettingName, createdModelResult.Entity.Id },
-                { JobSettings.CreateModel.MutationCofSettingName, currentGeneticConfig.MutationCof.ToString() }
+                { JobSettings.CreateModel.ActFuncMutationProbSettingName, currentGeneticConfig.ActFuncMutationProb.ToString() },
+                { JobSettings.CreateModel.CountOfInternalLayerMutationProbSettingName, currentGeneticConfig.CountOfInternalLayerMutationProb.ToString() },
+                { JobSettings.CreateModel.CountOfNeuronMutationProbSettingName, currentGeneticConfig.CountOfNeuronMutationProb.ToString() },
+                { JobSettings.CreateModel.BiasMutationProbSettingName, currentGeneticConfig.BiasMutationProb.ToString() },
+                { JobSettings.CreateModel.ModelNoSettingName, i.ToString() }
             };
 
             var settingModelFitJob = new Dictionary<string, string>
@@ -235,20 +242,27 @@ public class GeneticEpochJob : IGeneticEpochJob
         var nextJobSettings = new Dictionary<string, string>
         {
             { JobSettings.GeneticEpoche.SessionIdSettingName, _sessionId },
-            { JobSettings.GeneticEpoche.ModelCountSettingName, _modelCount.ToString() },
             { JobSettings.GeneticEpoche.ModelRangeConfigSettingName, JsonSerializer.Serialize(_modelRangeConfig) },
         };
 
+        var listenerFactory = _serviceProvider.GetRequiredService<ParentJobCompletionListenerFactory>();
+
+        var listener = listenerFactory.Create(
+            scheduler: scheduler,
+            jobScheduler: _jobScheduler,
+            parentJobKey: context.JobDetail.Key,
+            childJobs: childJobs,
+            settings: nextJobSettings,
+            epocheNo: currentEpochResult.Entity.EpochNo + 1,
+            maxEpochNo: currentGeneticConfig.MaxEpoches,
+            sessionId: _sessionId,
+            epochId: currentEpochResult.Entity.Id,
+            selectionCriterion: geneticConfigResult.Entity.SelectionCriterion,
+            stopAccValue: geneticConfigResult.Entity.StopAccValue,
+            stopLossValue: geneticConfigResult.Entity.StopLossValue);
+
         scheduler.ListenerManager.AddJobListener(
-            jobListener: new ParentJobCompletionListener(
-                scheduler: scheduler,
-                jobScheduler: _jobScheduler,
-                parentJobKey: context.JobDetail.Key,
-                childJobs: childJobs,
-                settings: nextJobSettings,
-                epocheNo: currentEpochResult.Entity.EpochNo+1,
-                maxEpochNo: currentGeneticConfig.MaxEpoches,
-                sessionId: _sessionId),
+            jobListener: listener,
             matchers: GroupMatcher<JobKey>.GroupEquals($"Epoche-{currentEpochResult.Entity.EpochNo}-{_sessionId}"));
     }
 
@@ -257,7 +271,6 @@ public class GeneticEpochJob : IGeneticEpochJob
         var jobDataMap = context.JobDetail.JobDataMap;
 
         _sessionId = jobDataMap.GetString(JobSettings.GeneticEpoche.SessionIdSettingName);
-        _modelCount = int.Parse(jobDataMap.GetString(JobSettings.GeneticEpoche.ModelCountSettingName));
 
         if (string.IsNullOrEmpty(_sessionId))
         {

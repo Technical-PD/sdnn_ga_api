@@ -33,7 +33,6 @@ public class GeneticService : IGeneticService
             var geneticJobSettngs = new Dictionary<string, string>
             {
                 { JobSettings.GeneticEpoche.SessionIdSettingName, sessionId },
-                { JobSettings.GeneticEpoche.ModelCountSettingName, modelRangeConfig.CountOfModels.ToString() },
                 { JobSettings.GeneticEpoche.ModelRangeConfigSettingName, modelRangeConfigJson },
             };
 

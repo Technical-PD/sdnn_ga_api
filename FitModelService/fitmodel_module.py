@@ -65,8 +65,6 @@ def fit_model(model_config_json):
         metrics=['accuracy']
     )
 
-    print("----------------------FIT-STARTED------------------------", flush=True)
-
     # Train model
     history = model.fit(
         x=train_x,
@@ -77,7 +75,6 @@ def fit_model(model_config_json):
         callbacks=callbacks
     )
 
-    print("----------------------FIT-FINISHED------------------------", flush=True)
 
     # Evaluate model
     result = model.evaluate(
@@ -88,30 +85,21 @@ def fit_model(model_config_json):
     weights_file = 'temp.weights.h5'
     model.save_weights(weights_file)
 
-    print("----------------------WEIGHTS-SAVED-LOCALY------------------------", flush=True)
-
     weigthBlobPath = model_config_json['WeigthPath']
     blob_client = container_client.get_blob_client(weigthBlobPath)
 
     with open(weights_file, "rb") as data:
         blob_client.upload_blob(data, overwrite=True)
 
-    print("----------------------WEIGHTS-SAVED-IN-BLOB-STORAGE------------------------", flush=True)
-
     # Remove temporary file if it exists
     if os.path.exists(weights_file):
         os.remove(weights_file)
-
-    print("----------------------WEIGHTS-REMOVED-LOCALY------------------------", flush=True)
-
-    print("----------------------RESPONSE-CREATING------------------------", flush=True)
 
     fit_history = {
         'Loss': round(result[0], 5),
         'Accuracy': round(result[1], 5),
         'History': history.history,
     }
-    print("----------------------RESPONSE-CREATED------------------------", flush=True)
 
     print(fit_history, flush=True)
     fit_history_json = json.dumps(fit_history)
@@ -143,7 +131,6 @@ def on_request(ch, method, properties, body):
 
     response = process_message(json_model)
 
-    print("----------------------READY-TO-BE-PUBLISHED------------------------", flush=True)
 
     # Надсилаємо відповідь у чергу, звідки очікує клієнт
     try:
@@ -151,7 +138,6 @@ def on_request(ch, method, properties, body):
             routing_key=properties.reply_to,
             properties=pika.BasicProperties(correlation_id=properties.correlation_id),
             body=response)
-        print("----------------------PUBLISHED------------------------", flush=True)
     except Exception as e:
         print(f"Failed to publish message: {e}", flush=True)
 

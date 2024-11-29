@@ -29,7 +29,6 @@ const ACTIVATION_FUNCTIONS = [
 const SessionStartConfigModal = ({ isModalOpen, setIsModalOpen, item }) => {
   const [config, setConfig] = useState({
     modelRangeConfig: {
-      countOfModels: 0,
       inputCount: 0,
       outputCount: 0,
       countOfInternalLayers: 0,
@@ -68,21 +67,6 @@ const SessionStartConfigModal = ({ isModalOpen, setIsModalOpen, item }) => {
       onCancel={handleCancel}>
       <div className="py-16">
         <div className="w-full justify-between">
-          <div>
-            <p>Count of models:</p>
-            <Input
-              value={config.modelRangeConfig.countOfModels}
-              onChange={e =>
-                setConfig({
-                  ...config,
-                  modelRangeConfig: {
-                    ...config.modelRangeConfig,
-                    countOfModels: e.target.value
-                  }
-                })
-              }
-            />
-          </div>
           <div>
             <p>Input count:</p>
             <Input

@@ -95,10 +95,17 @@ const SessionItemConfigModal = ({ isModalOpen, setIsModalOpen, item }) => {
             if (entity) {
               setSecondFormData({
                 maxEpoches: entity?.maxEpoches,
-                mutationCof: entity?.mutationCof,
+                countOfModelsInEpoch: entity?.countOfModelsInEpoch,
+                actFuncMutationProb: entity?.actFuncMutationProb,
+                countOfNeuronMutationProb: entity?.countOfNeuronMutationProb,
+                countOfInternalLayerMutationProb: entity?.countOfInternalLayerMutationProb,
+                biasMutationProb: entity?.biasMutationProb,
                 selectionCriterion: entity?.selectionCriterion,
+                stopAccValue: entity?.stopAccValue,
+                stopLossValue: entity?.stopLossValue,
                 name: entity?.name
               })
+
               setIsSecondDisabled(true)
             }
           }
@@ -130,7 +137,13 @@ const SessionItemConfigModal = ({ isModalOpen, setIsModalOpen, item }) => {
   const [secondFormData, setSecondFormData] = useState({
     selectionCriterion: '',
     maxEpoches: 0,
-    mutationCof: 0,
+    countOfModelsInEpoch: 0,
+    actFuncMutationProb: 0,
+    countOfNeuronMutationProb: 0,
+    countOfInternalLayerMutationProb: 0,
+    biasMutationProb: 0,
+    stopAccValue: 100,
+    stopLossValue: 0,
     name: `Model ${item.id}`
   })
 
@@ -163,6 +176,7 @@ const SessionItemConfigModal = ({ isModalOpen, setIsModalOpen, item }) => {
       onCancel={handleCancel}>
       <div className="py-16 flex space-x-4 w-full justify-between">
         <div>
+          <h1>Fit Config</h1>
           <p>Max epochs:</p>
           <Input
             value={firstFormData.maxEpoches}
@@ -208,7 +222,8 @@ const SessionItemConfigModal = ({ isModalOpen, setIsModalOpen, item }) => {
           </Button>
         </div>
         <div className="flex border-r border-r-gray-500" />
-        <div className="flex flex-col items-end">
+        <div className="flex flex-col items-start">
+          <h1>Genetic Config</h1>
           <p>Selection Criterion:</p>
           <Select
             value={secondFormData.selectionCriterion}
@@ -221,6 +236,7 @@ const SessionItemConfigModal = ({ isModalOpen, setIsModalOpen, item }) => {
             className="w-full"
             options={SELECTION_CRITERION_OPTIONS}
           />
+
           <p>Max epoch:</p>
           <Input
             value={secondFormData.maxEpoches}
@@ -233,18 +249,98 @@ const SessionItemConfigModal = ({ isModalOpen, setIsModalOpen, item }) => {
             type="number"
             placeholder="Max epoch"
           />
-          <p>Mutation coefficient:</p>
+
+          <p>Count of models in epoch:</p>
           <Input
-            value={secondFormData.mutationCof}
+            value={secondFormData.countOfModelsInEpoch}
             onChange={e => {
               setSecondFormData({
                 ...secondFormData,
-                mutationCof: e.target.value
+                countOfModelsInEpoch: e.target.value
               })
             }}
             type="number"
-            placeholder="Mutation coefficient"
+            placeholder="Count of models in epoch"
           />
+
+          <p>Activation Func mutation probability: {secondFormData.actFuncMutationProb}%</p>
+          <Input
+            value={secondFormData.actFuncMutationProb}
+            onChange={e => {
+              setSecondFormData({
+                ...secondFormData,
+                actFuncMutationProb: e.target.value
+              })
+            }}
+            type="range"
+            placeholder="Activation Func mutation probability"
+          />
+
+          <p>Count of neuron mutation probability: {secondFormData.countOfNeuronMutationProb}%</p>
+          <Input
+            value={secondFormData.countOfNeuronMutationProb}
+            onChange={e => {
+              setSecondFormData({
+                ...secondFormData,
+                countOfNeuronMutationProb: e.target.value
+              })
+            }}
+            type="range"
+            placeholder="Count of neuron mutation probability"
+          />
+
+          <p>Count of internal layers mutation probability: {secondFormData.countOfInternalLayerMutationProb}%</p>
+          <Input
+            value={secondFormData.countOfInternalLayerMutationProb}
+            onChange={e => {
+              setSecondFormData({
+                ...secondFormData,
+                countOfInternalLayerMutationProb: e.target.value
+              })
+            }}
+            type="range"
+            placeholder="Count of internal layers mutation probability"
+          />
+
+          <p>Bias mutation probability: {secondFormData.biasMutationProb}%</p>
+          <Input
+            value={secondFormData.biasMutationProb}
+            onChange={e => {
+              setSecondFormData({
+                ...secondFormData,
+                biasMutationProb: e.target.value
+              })
+            }}
+            type="range"
+            placeholder="Bias mutation probability"
+          />
+
+          <p>Stop genetic flow when accuracy higher than: {secondFormData.stopAccValue}%</p>
+          <Input
+            value={secondFormData.stopAccValue}
+            onChange={e => {
+              setSecondFormData({
+                ...secondFormData,
+                stopAccValue: e.target.value
+              })
+            }}
+            type="range"
+            placeholder="Stop genetic flow when accuracy higher than"
+          />
+
+          <p>Stop genetic flow when loss less than: {secondFormData.stopLossValue}</p>
+          <Input
+            value={secondFormData.stopLossValue}
+            onChange={e => {
+              setSecondFormData({
+                ...secondFormData,
+                stopLossValue: e.target.value
+              })
+            }}
+            type="number"
+            placeholder="Stop genetic flow when accuracy higher than"
+          />
+          
           <Button
             disabled={isSecondDisabled}
             onClick={handleSaveSecond}

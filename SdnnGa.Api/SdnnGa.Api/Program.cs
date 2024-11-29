@@ -20,6 +20,7 @@ using SdnnGa.Services.SessionService;
 using SdnnGa.Model.Core.Interfaces;
 using SdnnGa.Core.Classes;
 using SdnnGa.Core.Jobs;
+using SdnnGa.Core.Listeners;
 
 string CORSOpenPolicy = "OpenCORSPolicy";
 
@@ -53,7 +54,7 @@ builder.Services.AddQuartz(q =>
     q.UseMicrosoftDependencyInjectionJobFactory();
 });
 
-builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = false);
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 builder.Services.AddSingleton<IJobScheduler, JobScheduler>();
 builder.Services.AddSingleton<ISchedulerService, SchedulerService>();
 
@@ -86,6 +87,8 @@ builder.Services.AddScoped<IModelGenerator, ModelGenerator>();
 builder.Services.AddScoped<ICreateModelJob, CreateModelJob>();
 builder.Services.AddScoped<IFitModelJob, FitModelJob>();
 builder.Services.AddScoped<IGeneticEpochJob, GeneticEpochJob>();
+
+builder.Services.AddScoped<ParentJobCompletionListenerFactory>();
 
 builder.Services.AddCors(options =>
 {

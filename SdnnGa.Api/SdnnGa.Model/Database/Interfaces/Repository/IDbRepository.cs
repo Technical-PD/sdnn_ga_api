@@ -9,8 +9,8 @@ namespace SdnnGa.Model.Database.Interfaces.Repository;
 public interface IDbRepository<T>
 {
     Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default);
-    
-    Task<IEnumerable<T>> GetByFieldAsync(string fieldName, string fieldValue, Func<IQueryable<T>, IQueryable<T>> include = null, CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<T>> GetByFieldAsync(string fieldName, string fieldValue, bool useTracking = true, Func<IQueryable<T>, IQueryable<T>> include = null, CancellationToken cancellationToken = default);
 
     Task<T> GetByIdAsync(string id, Func<IQueryable<T>, IQueryable<T>> include = null, CancellationToken cancellationToken = default);
 

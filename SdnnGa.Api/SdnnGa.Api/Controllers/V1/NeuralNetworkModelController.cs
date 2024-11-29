@@ -3,10 +3,6 @@ using System.Threading.Tasks;
 using System.Threading;
 using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
 using SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
-using SdnnGa.Model.Models.Core.NNModel;
-using System.Text.Json;
-using SdnnGa.Core.Jobs;
-using System.Collections.Generic;
 using SdnnGa.Model.Services;
 
 namespace SdnnGa.Api.Controllers.V1;
@@ -32,7 +28,7 @@ public class NeuralNetworkModelController : ControllerBase
     [HttpGet("ByEpoche/{epocheId}")]
     public async Task<IActionResult> GetByEpocheAsync(string epocheId, CancellationToken cancellationToken = default)
     {
-        var result = await _neuralNetworkModelService.GetModelByEpochIdAsync(epocheId, cancellationToken);
+        var result = await _neuralNetworkModelService.GetModelByEpochIdAsync(epocheId, true, cancellationToken);
 
         return Ok(result);
     }
