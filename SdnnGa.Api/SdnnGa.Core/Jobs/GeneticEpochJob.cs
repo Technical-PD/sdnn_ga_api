@@ -180,12 +180,12 @@ public class GeneticEpochJob : IGeneticEpochJob
                 { JobSettings.FitModel.EpochsSettingName, fitConfigResult.Entity.MaxEpoches.ToString() },
                 { JobSettings.FitModel.IsLearnWithValidationSettingName, "True" },
                 { JobSettings.FitModel.LossFuncSettingName, fitConfigResult.Entity.LossFunc },
-                { JobSettings.FitModel.MinDeltaSettingName, "0.02" },
+                { JobSettings.FitModel.MinDeltaSettingName, "0.01" },
                 { JobSettings.FitModel.ModelIdSettingName, createdModelResult.Entity.Id },
                 { JobSettings.FitModel.OptimizerSettingName, fitConfigResult.Entity.FitMethod },
-                { JobSettings.FitModel.PatienceSettingName, "True" },
+                { JobSettings.FitModel.PatienceSettingName, "10" },
                 { JobSettings.FitModel.SessionIdSettingName, _sessionId },
-                { JobSettings.FitModel.UseEarlyStoppingSettingName, "False" },
+                { JobSettings.FitModel.UseEarlyStoppingSettingName, "True" },
                 { JobSettings.FitModel.XTrainPathSettingName, sessionResult.Entity.XTrainFileName },
                 { JobSettings.FitModel.YTrainPathSettingName, sessionResult.Entity.YTrainFileName }
             };

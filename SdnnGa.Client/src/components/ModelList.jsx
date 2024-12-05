@@ -4,7 +4,7 @@ import Loading from './Loading'
 import { Button, List, message, Select } from 'antd'
 import { Line } from '@ant-design/charts'
 //import { Line } from '@ant-design/plots';
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import apiCall from '../utils/apiCall'
 
 const BASE_CONFIG = {
@@ -39,10 +39,29 @@ const DIRECTION_BY_SORT_FIELD = {
 }
 
 const ModelList = () => {
-  const { epochId } = useParams()
+  const { epochId, sessionId } = useParams()
   const [sortField, setSortField] = useState('lossValue')
+  const [lostFunc, setLossFunc] = useState('')
 
   const [data, loading] = useGetEpochData(epochId)
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const data = await apiCall(`FitConfig/BySession/${sessionId}`)
+
+        const { entity } = data || {}
+
+        if (entity) {
+          setLossFunc(entity.lossFunc)
+        }
+      } catch (error) {
+        message.error('Failed to fetch session data')
+      }
+    }
+
+    fetchConfig()
+  }, [sessionId])
 
   if (loading) {
     return <Loading />
@@ -79,53 +98,54 @@ const ModelList = () => {
         const { fitHistory } = item
         const fitHistoryData = JSON.parse(fitHistory)
 
-        const { accuracy = [], loss = [], val_accuracy = [], val_loss = [] } = fitHistoryData || {}
+        const {
+          accuracy = [],
+          loss = [],
+          val_accuracy = [],
+          val_loss = []
+        } = fitHistoryData || {}
 
         const accuracyConfig = {
           ...BASE_CONFIG,
-          data: 
-          {
+          data: {
             value: accuracy.flatMap((accuracy_item, index) => [
               {
                 number: index + 1,
                 value: accuracy_item,
-                category: 'accuracy',
+                category: 'accuracy'
               },
               {
                 number: index + 1,
                 value: val_accuracy[index],
-                category: 'val_accuracy',
+                category: 'val_accuracy'
               }
             ])
           },
-          xField: (d) => d.number,
-          yField: 'value', 
+          xField: d => d.number,
+          yField: 'value',
           colorField: 'category'
         }
 
         const lossConfig = {
           ...BASE_CONFIG,
-          data: 
-          {
+          data: {
             value: loss.flatMap((loss_item, index) => [
               {
                 number: index + 1,
                 value: loss_item,
-                category: 'loss',
+                category: 'loss'
               },
               {
                 number: index + 1,
                 value: val_loss[index],
-                category: 'val_loss',
+                category: 'val_loss'
               }
             ])
           },
-          xField: (d) => d.number,
-          yField: 'value', 
+          xField: d => d.number,
+          yField: 'value',
           colorField: 'category'
         }
-
-        console.log(lossConfig)
 
         const downloadConfig = async () => {
           try {
@@ -233,7 +253,7 @@ const ModelList = () => {
                   <Line {...accuracyConfig} />
                 </div>
                 <div className="w-[50%]">
-                  <h3>Loss</h3>
+                  <h3>Loss | {lostFunc}</h3>
                   <Line {...lossConfig} />
                 </div>
               </div>

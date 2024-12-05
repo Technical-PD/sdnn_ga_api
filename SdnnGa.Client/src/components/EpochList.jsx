@@ -13,6 +13,8 @@ const EpochList = () => {
 
   const [data, loading] = useGetSessionData(sessionId)
   const [chartEntity, setChartEntity] = useState([])
+  const [byLossChartEntity, setByLossChartEntity] = useState([])
+  const [lossFunc, setLossFunc] = useState('')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,11 +24,39 @@ const EpochList = () => {
             `Statistic/Models/BySession/${sessionId}/ByAccuracy`
           )
 
+          const byLossData = await apiCall(
+            `Statistic/Models/BySession/${sessionId}/ByLoss`
+          )
+
+          const { entity: byLossEntity } = byLossData || {}
+
           const { entity } = data
+
+          const configData = await apiCall(`FitConfig/BySession/${sessionId}`)
+
+          const { entity: configEntity } = configData || {}
+
+          if (entity) {
+            setLossFunc(configEntity.lossFunc)
+          }
 
           Array.isArray(entity) &&
             setChartEntity(
               entity
+                .sort((a, b) => {
+                  return new Date(a.recCreated) - new Date(b.recCreated)
+                })
+                .map((item, index) => {
+                  return {
+                    ...item,
+                    index
+                  }
+                })
+            )
+
+          Array.isArray(byLossEntity) &&
+            setByLossChartEntity(
+              byLossEntity
                 .sort((a, b) => {
                   return new Date(a.recCreated) - new Date(b.recCreated)
                 })
@@ -66,6 +96,26 @@ const EpochList = () => {
     }
   }
 
+  const configByLossAcc = {
+    data: byLossChartEntity || [],
+    yField: 'accuracyValue',
+    xField: 'index',
+    group: true,
+    style: {
+      inset: 5
+    }
+  }
+
+  const configByLossLoss = {
+    data: byLossChartEntity || [],
+    yField: 'lossValue',
+    xField: 'index',
+    group: true,
+    style: {
+      inset: 5
+    }
+  }
+
   if (loading) {
     return <Loading />
   }
@@ -86,14 +136,32 @@ const EpochList = () => {
             </List.Item>
           )}
         />
-        <div>
-          <h1>Best models by Accuracy in each epoch:</h1>
-          <Column {...configAcc} />
-        </div>
+        <div className="flex justify-between">
+          <div className="w-[48%]">
+            <div>
+              <h1>Best models by Accuracy</h1>
+              <h1>Accuracy in each epoch:</h1>
+              <Column {...configAcc} />
+            </div>
 
-        <div>
-          <h1>Best models by Loss in each epoch:</h1>
-          <Column {...configLoss} />
+            <div>
+              <h1>Loss ({lossFunc}) in each epoch:</h1>
+              <Column {...configLoss} />
+            </div>
+          </div>
+          <div className="w-[48%]">
+            <div>
+              <h1>Best models by Loss </h1>
+              <h1>Accuracy in each epoch:</h1>
+
+              <Column {...configByLossAcc} />
+            </div>
+
+            <div>
+              <h1>Loss ({lossFunc}) in each epoch:</h1>
+              <Column {...configByLossLoss} />
+            </div>
+          </div>
         </div>
       </div>
     )

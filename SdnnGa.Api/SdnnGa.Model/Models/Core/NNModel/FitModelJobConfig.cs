@@ -3,7 +3,7 @@
 public class FitModelJobConfig
 {
     public bool IsLearnWithValidation { get; set; }
-    public bool Patience { get; set; }
+    public int Patience { get; set; }
     public bool UseEarlyStopping { get; set; }
     public float MinDelta { get; set; }
     public int BatchSize { get; set; }

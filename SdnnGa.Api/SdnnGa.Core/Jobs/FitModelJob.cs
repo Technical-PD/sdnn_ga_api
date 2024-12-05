@@ -85,7 +85,7 @@ public class FitModelJob : IFitModelJob
         {
             UseEarlyStopping = bool.Parse(jobDataMap.GetString(JobSettings.FitModel.UseEarlyStoppingSettingName)),
             MinDelta = float.Parse(jobDataMap.GetString(JobSettings.FitModel.MinDeltaSettingName)),
-            Patience = bool.Parse(jobDataMap.GetString(JobSettings.FitModel.PatienceSettingName)),
+            Patience = int.Parse(jobDataMap.GetString(JobSettings.FitModel.PatienceSettingName)),
             IsLearnWithValidation = bool.Parse(jobDataMap.GetString(JobSettings.FitModel.IsLearnWithValidationSettingName)),
             Optimizer = jobDataMap.GetString(JobSettings.FitModel.OptimizerSettingName),
             LossFunc = jobDataMap.GetString(JobSettings.FitModel.LossFuncSettingName),
