@@ -72,7 +72,7 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
         }
     }
 
-    public async Task<T> GetByIdAsync(string id, Func<IQueryable<T>, IQueryable<T>> include = null, CancellationToken cancellationToken = default)
+    public async Task<T> GetByIdAsync(string id, Func<IQueryable<T>, IQueryable<T>> include = null, CancellationToken cancellationToken = default, bool useTracking = true)
     {
         try
         {
@@ -81,6 +81,11 @@ public class DbRepository<T> : IDbRepository<T> where T : BaseModel
             if (include != null)
             {
                 query = include(query);
+            }
+
+            if (!useTracking)
+            {
+                query = query.AsNoTracking();
             }
 
             var entity = await query.FirstOrDefaultAsync(e => EF.Property<string>(e, "Id") == id, cancellationToken);

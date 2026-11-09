@@ -41,11 +41,16 @@ const SessionStartConfigModal = ({ isModalOpen, setIsModalOpen, item }) => {
 
   const handleOk = async () => {
     try {
-      await apiCall(
+      const result = await apiCall(
         `GeneticFlow/StartFlow?sessionId=${item.id}`,
         'POST',
         config
       )
+
+      if (result?.isError) {
+        message.error(`Failed to start session: ${result.message}`)
+        return
+      }
 
       message.success('Session started successfully!')
       setIsModalOpen(false)

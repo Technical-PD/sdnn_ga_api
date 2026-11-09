@@ -74,7 +74,7 @@ const EpochList = () => {
     }
 
     fetchData()
-  }, [sessionId])
+  }, [sessionId, data]) // data оновлюється опитуванням — перераховуємо статистику разом з ним
 
   const configAcc = {
     data: chartEntity || [],

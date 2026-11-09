@@ -25,6 +25,9 @@ public class DbNeuralNetworkModel : BaseModel
 
     public float AccuracyValue { get; set; }
 
+    /// <summary>Помилка створення/навчання моделі; <c>null</c>, якщо все пройшло успішно.</summary>
+    public string FitError { get; set; }
+
     [Required]
     [ForeignKey("Session")]
     public string SessionId { get; set; }

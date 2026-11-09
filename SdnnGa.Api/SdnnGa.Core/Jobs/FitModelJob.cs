@@ -1,36 +1,39 @@
 ﻿using Quartz;
 using SdnnGa.Model.Constants;
 using SdnnGa.Model.Core.Interfaces;
-using SdnnGa.Model.Infrastructure.Interfaces.AzureBlobStorage;
-using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
+using SdnnGa.Model.Infrastructure.Interfaces.Storage;
+using SdnnGa.Model.Infrastructure.Interfaces.Worker;
+using SdnnGa.Model.Models;
 using SdnnGa.Model.Models.Core.NNModel;
 using SdnnGa.Model.Services;
 using System;
+using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SdnnGa.Core.Jobs;
 
 public class FitModelJob : IFitModelJob
 {
-    private readonly IRabbitMqClientFitModelService _rabbitMqClient;
+    private static readonly TimeSpan CreatePollInterval = TimeSpan.FromSeconds(2);
+
+    private readonly IModelWorkerClient _workerClient;
     private readonly IStorage _storage;
     private readonly INeuralNetworkModelService _neuralNetworkModelService;
-    private readonly int _timeout = 1800;
 
     private string _modelId;
-    private string _fitModelJobConfig;
     private string _sessionId;
     private string _epocheNo;
     private string _weigthPath;
 
     public FitModelJob(
-        IRabbitMqClientFitModelService rabbitMqClient,
+        IModelWorkerClient workerClient,
         IStorage storage,
         INeuralNetworkModelService neuralNetworkModelService)
     {
-        _rabbitMqClient = rabbitMqClient;
+        _workerClient = workerClient;
         _storage = storage;
         _neuralNetworkModelService = neuralNetworkModelService;
     }
@@ -39,15 +42,23 @@ public class FitModelJob : IFitModelJob
     {
         try
         {
-            await InizializeSettingValuesAsync(context);
-            
+            var fitModelJobConfig = await InizializeSettingValuesAsync(context);
+
+            if (fitModelJobConfig == null)
+            {
+                // Створення моделі завершилось з помилкою — вона вже записана в модель.
+                return;
+            }
+
             Console.WriteLine($"Start fit model {_modelId}");
 
-            var result = await _rabbitMqClient.SendMessageAsync(_fitModelJobConfig, timeoutInSeconds: _timeout);
+            var fitResult = await _workerClient.FitModelAsync(fitModelJobConfig, context.CancellationToken);
 
-            Console.WriteLine(result);
-
-            var fitResult = JsonSerializer.Deserialize<FitResult>(result);
+            if (!string.IsNullOrEmpty(fitResult.Weights))
+            {
+                using var weightsStream = new MemoryStream(Convert.FromBase64String(fitResult.Weights));
+                await _storage.PutFileAsync(_weigthPath, weightsStream, true);
+            }
 
             var modelToUpdateResult = await _neuralNetworkModelService.GetModelByIdAsync(_modelId);
 
@@ -59,20 +70,23 @@ public class FitModelJob : IFitModelJob
             modelToUpdateResult.Entity.LossValue = fitResult.Loss;
             modelToUpdateResult.Entity.AccuracyValue = fitResult.Accuracy;
             modelToUpdateResult.Entity.IsTrained = true;
+            modelToUpdateResult.Entity.FitError = null;
             modelToUpdateResult.Entity.FitHistory = JsonSerializer.Serialize(fitResult.History);
-            modelToUpdateResult.Entity.WeightsFileName = _weigthPath;
+            modelToUpdateResult.Entity.WeightsFileName = string.IsNullOrEmpty(fitResult.Weights) ? null : _weigthPath;
 
             await _neuralNetworkModelService.UpdateModelAssync(modelToUpdateResult.Entity);
 
-            Console.WriteLine($"End fit model {_modelId}");
+            Console.WriteLine($"End fit model {_modelId} (loss={fitResult.Loss}, accuracy={fitResult.Accuracy})");
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
+            Console.WriteLine($"FitModelJob failed for model '{_modelId}': {ex}");
+            await ModelFailureRecorder.RecordAsync(_neuralNetworkModelService, _modelId, $"Training failed: {ex.Message}");
         }
     }
 
-    private async Task InizializeSettingValuesAsync(IJobExecutionContext context)
+    /// <returns>Конфіг для навчання або <c>null</c>, якщо модель не вдалося створити.</returns>
+    private async Task<FitModelJobConfig> InizializeSettingValuesAsync(IJobExecutionContext context)
     {
         var jobDataMap = context.JobDetail.JobDataMap;
 
@@ -91,28 +105,58 @@ public class FitModelJob : IFitModelJob
             LossFunc = jobDataMap.GetString(JobSettings.FitModel.LossFuncSettingName),
             Epochs = int.Parse(jobDataMap.GetString(JobSettings.FitModel.EpochsSettingName)),
             BatchSize = int.Parse(jobDataMap.GetString(JobSettings.FitModel.BatchSizeSettingName)),
-            WeigthPath = _weigthPath
         };
 
-        var model = await _neuralNetworkModelService.GetModelByIdAsync(_modelId);
+        var model = await WaitForCreatedModelAsync(context.CancellationToken);
 
-        using (var memoryStream = await _storage.GetFileAsync(model.Entity.ModelConfigFileName))
+        if (model.FitError != null)
         {
-            fitModelJobConfig.ModelConfigJson = _storage.ReadStreamToString(memoryStream, Encoding.UTF8);
+            return null;
         }
 
-        string xTrainPath = jobDataMap.GetString(JobSettings.FitModel.XTrainPathSettingName);
-        using (var memoryStream = await _storage.GetFileAsync(xTrainPath))
+        fitModelJobConfig.ModelConfigJson = await ReadRequiredTextAsync(model.ModelConfigFileName);
+        fitModelJobConfig.XTrain = await ReadRequiredTextAsync(jobDataMap.GetString(JobSettings.FitModel.XTrainPathSettingName));
+        fitModelJobConfig.YTrain = await ReadRequiredTextAsync(jobDataMap.GetString(JobSettings.FitModel.YTrainPathSettingName));
+
+        return fitModelJobConfig;
+    }
+
+    /// <summary>
+    /// Fit-джоба стартує через 10 с після create-джоби, але воркер обробляє запити по черзі,
+    /// тож модель могла ще не бути створена. Чекаємо, поки CreateModelJob запише конфіг (або помилку).
+    /// </summary>
+    private async Task<NeuralNetworkModel> WaitForCreatedModelAsync(CancellationToken cancellationToken)
+    {
+        while (true)
         {
-            fitModelJobConfig.XTrain = _storage.ReadStreamToString(memoryStream, Encoding.UTF8);
+            var modelResult = await _neuralNetworkModelService.GetModelByIdAsync(_modelId, cancellationToken, useTracking: false);
+
+            if (modelResult.IsError || modelResult.Entity == null)
+            {
+                throw new Exception($"Model '{_modelId}' was not found: {modelResult.Message}");
+            }
+
+            var model = modelResult.Entity;
+
+            if (!string.IsNullOrEmpty(model.ModelConfigFileName) || model.FitError != null)
+            {
+                return model;
+            }
+
+            await Task.Delay(CreatePollInterval, cancellationToken);
+        }
+    }
+
+    private async Task<string> ReadRequiredTextAsync(string storagePath)
+    {
+        if (string.IsNullOrEmpty(storagePath))
+        {
+            throw new InvalidOperationException("Required file path is empty (was the training data uploaded for this session?).");
         }
 
-        string yTrainPath = jobDataMap.GetString(JobSettings.FitModel.YTrainPathSettingName);
-        using (var memoryStream = await _storage.GetFileAsync(yTrainPath))
-        {
-            fitModelJobConfig.YTrain = _storage.ReadStreamToString(memoryStream, Encoding.UTF8);
-        }
+        using var stream = await _storage.GetFileAsync(storagePath)
+            ?? throw new FileNotFoundException($"File '{storagePath}' was not found in storage.");
 
-        _fitModelJobConfig = JsonSerializer.Serialize(fitModelJobConfig);
+        return _storage.ReadStreamToString(stream, Encoding.UTF8);
     }
 }

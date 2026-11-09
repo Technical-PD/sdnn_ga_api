@@ -56,7 +56,7 @@ public class SessionsController : ControllerBase
         var session = new Session
         {
             Name = sessionCreateRequest.Name,
-            Description = sessionCreateRequest.Descrioption
+            Description = sessionCreateRequest.Description
         };
 
         var sessionResult = await _sessionService.CreateSessionAssync(session, cancellationToken);

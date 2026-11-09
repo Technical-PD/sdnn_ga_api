@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System.Threading;
-using SdnnGa.Model.Infrastructure.Interfaces.RabbitMq;
-using SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
 using SdnnGa.Model.Services;
 
 namespace SdnnGa.Api.Controllers.V1;
@@ -11,17 +9,11 @@ namespace SdnnGa.Api.Controllers.V1;
 [ApiController]
 public class NeuralNetworkModelController : ControllerBase
 {
-    private readonly IJobScheduler _jobScheduler;
-    private readonly IRabbitMqClientCreateModelService _rebbitMqClient;
     private readonly INeuralNetworkModelService _neuralNetworkModelService;
 
     public NeuralNetworkModelController(
-        IJobScheduler jobScheduler,
-        IRabbitMqClientCreateModelService rebbitMqClient,
         INeuralNetworkModelService neuralNetworkModelService)
     {
-        _jobScheduler = jobScheduler;
-        _rebbitMqClient = rebbitMqClient;
         _neuralNetworkModelService = neuralNetworkModelService;
     }
 

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Quartz.Impl.Matchers;
 using Quartz;
+using SdnnGa.Core.Classes;
 using SdnnGa.Core.Listeners;
 using SdnnGa.Model.Constants;
 using SdnnGa.Model.Core.Interfaces;
@@ -92,16 +93,7 @@ public class GeneticEpochJob : IGeneticEpochJob
                 return;
             }
 
-            NeuralNetworkModel bestModel = null;
-
-            if (currentGeneticConfig.SelectionCriterion == SelectionCriterion.ByAccuracy)
-            {
-                bestModel = epocheModelResult.Entity.OrderBy(md => md.LossValue).FirstOrDefault();
-            }
-            else
-            {
-                bestModel = epocheModelResult.Entity.OrderBy(md => md.AccuracyValue).LastOrDefault();
-            }
+            NeuralNetworkModel bestModel = BestModelSelector.Select(epocheModelResult.Entity, currentGeneticConfig.SelectionCriterion);
 
             modelConfigNetPath = bestModel?.ModelConfigDotNetFileName;
 

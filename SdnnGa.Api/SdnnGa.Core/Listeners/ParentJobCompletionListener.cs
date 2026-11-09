@@ -1,4 +1,5 @@
 ﻿using Quartz;
+using SdnnGa.Core.Classes;
 using SdnnGa.Core.Jobs;
 using SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
 using System.Collections.Generic;
@@ -94,7 +95,7 @@ public class ParentJobCompletionListener : IJobListener
             while (true)
             {
                 trainedModelInLastEpocheResult = await _neuralNetworkModelService.GetModelByEpochIdAsync(_epochId, false, cancellationToken);
-                if (trainedModelInLastEpocheResult.Entity != null && trainedModelInLastEpocheResult.Entity.All(x => x.IsTrained))
+                if (trainedModelInLastEpocheResult.Entity != null && trainedModelInLastEpocheResult.Entity.All(x => x.IsFinished))
                 {
                     break;
                 }
@@ -111,9 +112,15 @@ public class ParentJobCompletionListener : IJobListener
                 await _scheduler.DeleteJob(childJob.Key);
             }
 
-            var bestModel = _selectionCriterion == Model.Constants.SelectionCriterion.ByLoss
-                ? trainedModelInLastEpocheResult?.Entity?.OrderBy(x => x.LossValue).FirstOrDefault()
-                : trainedModelInLastEpocheResult?.Entity?.OrderBy(x => x.AccuracyValue).LastOrDefault();
+            var bestModel = BestModelSelector.Select(trainedModelInLastEpocheResult?.Entity, _selectionCriterion);
+
+            if (bestModel == null)
+            {
+                Console.WriteLine($"No model was trained successfully in epoch {_epocheNo - 1} of session '{_sessionId}'. Genetic flow is stopped.");
+                Console.WriteLine("####################################################################");
+                _scope.Dispose();
+                return;
+            }
 
             Console.WriteLine("#------------------------------------------------------------------------------#\n");
             Console.WriteLine($"#{_epocheNo} < {_maxEpochNo} && {bestModel.AccuracyValue} < {_stopAccValue} && {bestModel.LossValue} > {_stopLossValue}" +

@@ -1,6 +1,6 @@
 ﻿using SdnnGa.Model.Constants;
 using SdnnGa.Model.Enums;
-using SdnnGa.Model.Infrastructure.Interfaces.AzureBlobStorage;
+using SdnnGa.Model.Infrastructure.Interfaces.Storage;
 using SdnnGa.Model.Services.Models.ServiceResult;
 using SdnnGa.Model.Services;
 using System.IO;

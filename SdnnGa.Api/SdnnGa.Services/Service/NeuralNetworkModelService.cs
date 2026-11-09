@@ -72,7 +72,7 @@ public class NeuralNetworkModelService : INeuralNetworkModelService
         }
     }
 
-    public async Task<ServiceResult<NeuralNetworkModel>> GetModelByIdAsync(string modelId, CancellationToken cancellationToken = default)
+    public async Task<ServiceResult<NeuralNetworkModel>> GetModelByIdAsync(string modelId, CancellationToken cancellationToken = default, bool useTracking = true)
     {
         if (string.IsNullOrEmpty(modelId))
         {
@@ -81,7 +81,7 @@ public class NeuralNetworkModelService : INeuralNetworkModelService
 
         try
         {
-            var dbModel = await _dbRepository.GetByIdAsync(modelId, null, cancellationToken);
+            var dbModel = await _dbRepository.GetByIdAsync(modelId, null, cancellationToken, useTracking);
 
             return ServiceResult<NeuralNetworkModel>.FromSuccess(_mapper.Map<NeuralNetworkModel>(dbModel));
         }

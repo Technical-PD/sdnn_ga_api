@@ -400,3 +400,10 @@ FodyWeavers.xsd
 
 **/venv
 **/node_modules
+# Desktop build outputs
+SdnnGa.Api/SdnnGa.Api/wwwroot/
+dist/
+.build-cache/
+*.db
+*.db-shm
+*.db-wal

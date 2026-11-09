@@ -30,10 +30,9 @@ const SessionItemUploadModal = ({ item, isModalOpen, setIsModalOpen }) => {
     secondFormData.append('dataForm', secondFile.originFileObj)
 
     try {
-      const res = await Promise.all([
-        apiCall(`Data/AddXData/${item.id}`, 'POST', firstFormData, true),
-        apiCall(`Data/AddYData/${item.id}`, 'POST', secondFormData, true)
-      ])
+      // Послідовно: кожен запит оновлює весь запис сесії, паралельні запити перезаписували б шлях один одного.
+      await apiCall(`Data/AddXData/${item.id}`, 'POST', firstFormData, true)
+      await apiCall(`Data/AddYData/${item.id}`, 'POST', secondFormData, true)
 
       message.success('Upload successful!')
       setIsModalOpen(false)

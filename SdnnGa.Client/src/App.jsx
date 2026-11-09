@@ -9,6 +9,7 @@ import SessionsList from './components/SessionsList'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import EpochList from './components/EpochList'
 import ModelList from './components/ModelList'
+import WorkerStatusBanner from './components/WorkerStatusBanner'
 const { Header, Sider, Content } = Layout
 
 const router = createBrowserRouter([
@@ -67,6 +68,7 @@ const App = () => {
             }}
           />
         </Header>
+        <WorkerStatusBanner />
         <Content
           style={{
             margin: '24px 16px',

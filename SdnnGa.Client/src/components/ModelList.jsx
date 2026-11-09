@@ -84,6 +84,11 @@ const ModelList = () => {
       dataSource={
         data
           .sort((a, b) => {
+            // Моделі з помилкою — в кінці списку.
+            if (!!a.fitError !== !!b.fitError) {
+              return a.fitError ? 1 : -1
+            }
+
             const direction = DIRECTION_BY_SORT_FIELD[sortField] || 'asc'
 
             if (direction === 'asc') {
@@ -92,7 +97,7 @@ const ModelList = () => {
               return b[sortField] - a[sortField]
             }
           })
-          .filter(item => item.isTrained) || []
+          .filter(item => item.isTrained || item.fitError) || []
       }
       renderItem={item => {
         const { fitHistory } = item
@@ -229,6 +234,11 @@ const ModelList = () => {
                 <div>Is trained: {item?.isTrained?.toString()}</div>
                 <div>Loss {item?.lossValue}</div>
                 <div>Accuracy {item?.accuracyValue}</div>
+                {item?.fitError && (
+                  <div style={{ color: '#cf1322', maxWidth: 360 }}>
+                    Error: {item.fitError}
+                  </div>
+                )}
                 <div>
                   {item?.modelConfigFileName && (
                     <Button onClick={downloadConfig} className="mt-4">

@@ -1,10 +1,10 @@
-const BASE_URL = 'http://localhost:8080/api/'
+// UI обслуговується тим самим локальним сервером, що й API (десктопний застосунок),
+// а в режимі розробки Vite проксіює /api на http://127.0.0.1:5080 (див. vite.config.js).
+const BASE_URL = '/api/'
 
 const apiCall = async (url, method = 'GET', body, isFiles, returnBlob) => {
   const headers = new Headers()
 
-  headers.append('Access-Control-Allow-Origin', '*')
-  headers.append('ngrok-skip-browser-warning', true)
   !isFiles && headers.append('Content-Type', 'application/json')
 
   const reqParams = {
@@ -20,6 +20,12 @@ const apiCall = async (url, method = 'GET', body, isFiles, returnBlob) => {
   }
 
   const response = await fetch(`${BASE_URL}${url}`, reqParams)
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(text || `Request failed with status ${response.status}`)
+  }
+
   let data
   if (returnBlob) {
     data = await response.blob()

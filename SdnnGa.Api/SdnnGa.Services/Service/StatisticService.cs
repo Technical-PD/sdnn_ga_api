@@ -45,7 +45,11 @@ public class StatisticService : IStatisticService
             foreach (var epoche in sessionEpochesResult.Entity)
             {
                 var bestModel = await _networkModelService.GetModelByEpochIdAsync(epoche.Id, true, cancellationToken);
-                bestModels.Add(bestModel.Entity.OrderBy(md => md.LossValue).FirstOrDefault());
+                var best = bestModel.Entity.Where(md => md.IsTrained && md.FitError == null).OrderBy(md => md.LossValue).FirstOrDefault();
+                if (best != null)
+                {
+                    bestModels.Add(best);
+                }
             }
 
             return ServiceResult<List<NeuralNetworkModel>>.FromSuccess(bestModels);
@@ -81,7 +85,11 @@ public class StatisticService : IStatisticService
             foreach (var epoche in sessionEpochesResult.Entity)
             {
                 var bestModel = await _networkModelService.GetModelByEpochIdAsync(epoche.Id, true, cancellationToken);
-                bestModels.Add(bestModel.Entity.OrderBy(md => md.AccuracyValue).LastOrDefault());
+                var best = bestModel.Entity.Where(md => md.IsTrained && md.FitError == null).OrderByDescending(md => md.AccuracyValue).FirstOrDefault();
+                if (best != null)
+                {
+                    bestModels.Add(best);
+                }
             }
 
             return ServiceResult<List<NeuralNetworkModel>>.FromSuccess(bestModels);

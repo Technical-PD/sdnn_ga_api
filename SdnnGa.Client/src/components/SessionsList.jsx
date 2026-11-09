@@ -6,7 +6,7 @@ import { useState } from 'react'
 import apiCall from '../utils/apiCall'
 
 const SessionsList = () => {
-  const [data, loading] = useGetSessionList()
+  const [data, loading, refreshSessions] = useGetSessionList()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [name, setName] = useState('')
@@ -33,11 +33,19 @@ const SessionsList = () => {
         description
       }
 
-      await apiCall('Sessions', 'POST', body)
+      const result = await apiCall('Sessions', 'POST', body)
+
+      if (result?.isError) {
+        message.error(`Failed to create session: ${result.message}`)
+        return
+      }
 
       message.success('Session created successfully!')
 
       setIsModalOpen(false)
+      setName('')
+      setDescription('')
+      await refreshSessions()
     } catch (error) {
       message.error(`Failed to create session: ${error.message}`)
     }

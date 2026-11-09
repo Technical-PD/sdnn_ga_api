@@ -4,7 +4,22 @@
     <TargetFramework>net8.0</TargetFramework>
     <InvariantGlobalization>true</InvariantGlobalization>
     <UserSecretsId>5aa73cdb-29a1-4959-94cc-789c9cd9bd0c</UserSecretsId>
+    <AssemblyName>SdnnGa</AssemblyName>
+    <RootNamespace>SdnnGa.Api</RootNamespace>
+    <StartupObject>SdnnGa.Api.Program</StartupObject>
+    <Version>1.0.0</Version>
   </PropertyGroup>
+
+  <!-- Release-збірка — віконний застосунок без консолі; логи пишуться у %LOCALAPPDATA%\SdnnGa\logs. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <OutputType>WinExe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Python-воркер копіюється поруч з exe: {AppDir}/worker/sdnnga_worker.py -->
+    <None Include="..\..\Worker\sdnnga_worker.py" Link="worker\sdnnga_worker.py" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\Worker\requirements.txt" Link="worker\requirements.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="13.0.1" />
@@ -17,6 +32,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Photino.NET" Version="4.0.16" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
 

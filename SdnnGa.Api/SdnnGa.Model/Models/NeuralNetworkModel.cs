@@ -18,6 +18,12 @@ public class NeuralNetworkModel : BaseModel
 
     public float AccuracyValue { get; set; }
 
+    /// <summary>Помилка створення/навчання моделі; <c>null</c>, якщо все пройшло успішно.</summary>
+    public string FitError { get; set; }
+
+    /// <summary>Модель або успішно навчена, або завершилась з помилкою — більше не очікує обробки.</summary>
+    public bool IsFinished => IsTrained || FitError != null;
+
     public string SessionId { get; set; }
 
     public string EpocheId { get; set; }
