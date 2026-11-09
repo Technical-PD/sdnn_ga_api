@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using SdnnGa.Database.Models;
+using SdnnGa.Model.Constants;
+using SdnnGa.Model.Infrastructure.Interfaces.Storage;
 using SdnnGa.Model.Database.Interfaces.Repository;
 using SdnnGa.Model.Models;
 using SdnnGa.Model.Services.Models.ServiceResult;
@@ -16,13 +18,19 @@ public class SessionService : ISessionService
 {
     private readonly IDbRepository<DbSession> _dbRepository;
     private readonly IMapper _mapper;
+    private readonly IStorage _storage;
+    private readonly ISessionOverviewService _sessionOverviewService;
 
     public SessionService(
         IDbRepository<DbSession> dbRepository,
-        IMapper mapper)
+        IMapper mapper,
+        IStorage storage,
+        ISessionOverviewService sessionOverviewService)
     {
         _dbRepository = dbRepository;
         _mapper = mapper;
+        _storage = storage;
+        _sessionOverviewService = sessionOverviewService;
     }
 
     public async Task<ServiceResult<Session>> CreateSessionAssync(Session session, CancellationToken cancellationToken = default)
@@ -135,12 +143,21 @@ public class SessionService : ISessionService
 
         try
         {
+            if (await _sessionOverviewService.IsRunningAsync(sessionId, cancellationToken))
+            {
+                return ServiceResult<Session>.FromError("The genetic search is still running for this session. Wait until it finishes, then delete the session.");
+            }
+
+            // Епохи, моделі та конфіги видаляються каскадно (FK ON DELETE CASCADE).
             var dbSession = await _dbRepository.DeleteAsync(sessionId,  cancellationToken);
 
             if (dbSession == null)
             {
                 return ServiceResult<Session>.FromNotFound($"Sessions with Id({sessionId}) was not found.");
             }
+
+            // Дані, конфіги та ваги моделей сесії на диску.
+            await _storage.DeleteDirectoryAsync(string.Format(StoragePath.SessionPath, sessionId));
 
             return ServiceResult<Session>.FromSuccess(_mapper.Map<Session>(dbSession));
         }

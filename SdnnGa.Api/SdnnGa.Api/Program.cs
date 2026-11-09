@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -184,6 +184,7 @@ public static class Program
         builder.Services.AddScoped<IFitConfigService, FitConfigService>();
         builder.Services.AddScoped<IStatisticService, StatisticService>();
         builder.Services.AddScoped<IGeneticConfigService, GeneticConfigService>();
+        builder.Services.AddScoped<ISessionOverviewService, SessionOverviewService>();
 
         // Core
         builder.Services.AddScoped<IModelGenerator, ModelGenerator>();

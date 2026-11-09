@@ -12,10 +12,39 @@ namespace SdnnGa.Api.Controllers.V1;
 public class SessionsController : ControllerBase
 {
     private readonly ISessionService _sessionService;
+    private readonly ISessionOverviewService _sessionOverviewService;
 
-    public SessionsController(ISessionService sessionService)
+    public SessionsController(ISessionService sessionService, ISessionOverviewService sessionOverviewService)
     {
         _sessionService = sessionService;
+        _sessionOverviewService = sessionOverviewService;
+    }
+
+    /// <summary>
+    /// Огляд усіх сесій: стан налаштування, чи працює алгоритм, прогрес і найкращі результати.
+    /// </summary>
+    [HttpGet("Overview")]
+    public async Task<IActionResult> GetOverviews(CancellationToken cancellationToken = default)
+    {
+        return Ok(await _sessionOverviewService.GetOverviewsAsync(cancellationToken));
+    }
+
+    /// <summary>
+    /// Огляд однієї сесії разом з підсумками по поколіннях.
+    /// </summary>
+    [HttpGet("{id}/Overview")]
+    public async Task<IActionResult> GetOverview(string id, CancellationToken cancellationToken = default)
+    {
+        return Ok(await _sessionOverviewService.GetOverviewAsync(id, cancellationToken));
+    }
+
+    /// <summary>
+    /// Видаляє сесію з усіма поколіннями, моделями, конфігами та файлами.
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken = default)
+    {
+        return Ok(await _sessionService.DeleteSessionAsync(id, cancellationToken));
     }
 
     /// <summary>

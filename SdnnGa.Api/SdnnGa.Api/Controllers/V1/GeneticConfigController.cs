@@ -23,7 +23,7 @@ public class GeneticConfigController : ControllerBase
     {
         var sessionResult = await _geneticConfigService.GetAllBySessionIdAsync(sessionId, cancellationToken);
 
-        if (sessionResult != null && sessionResult.IsSuccessful)
+        if (sessionResult != null && sessionResult.IsSuccessful && sessionResult.Entity != null)
         {
             sessionResult.Entity.ActFuncMutationProb *= 100;
             sessionResult.Entity.CountOfNeuronMutationProb *= 100;
@@ -40,7 +40,7 @@ public class GeneticConfigController : ControllerBase
     {
         var sessionResult = await _geneticConfigService.GetByIdAsync(id, cancellationToken);
 
-        if (sessionResult != null && sessionResult.IsSuccessful)
+        if (sessionResult != null && sessionResult.IsSuccessful && sessionResult.Entity != null)
         {
             sessionResult.Entity.ActFuncMutationProb *= 100;
             sessionResult.Entity.CountOfNeuronMutationProb *= 100;

@@ -1,38 +1,11 @@
 import { Alert, Button } from 'antd'
-import { useCallback, useEffect, useState } from 'react'
-import apiCall from '../utils/apiCall'
+import { useWorkerStatus } from '../hooks/useWorkerStatus'
 
-const POLL_INTERVAL_MS = 3000
-
-// Показує стан локального Python-воркера (TensorFlow), поки він не готовий до навчання моделей.
+// Показується над сторінкою, лише поки воркер не готовий (запуск або помилка).
 const WorkerStatusBanner = () => {
-  const [status, setStatus] = useState(null)
-  const [retrying, setRetrying] = useState(false)
-
-  const fetchStatus = useCallback(async () => {
-    try {
-      setStatus(await apiCall('System/Status'))
-    } catch {
-      setStatus(null)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchStatus()
-    const timer = setInterval(fetchStatus, POLL_INTERVAL_MS)
-    return () => clearInterval(timer)
-  }, [fetchStatus])
-
-  const retry = async () => {
-    setRetrying(true)
-    try {
-      setStatus(await apiCall('System/Worker/Start', 'POST'))
-    } finally {
-      setRetrying(false)
-    }
-  }
-
+  const { status, retry, retrying } = useWorkerStatus()
   const worker = status?.worker
+
   if (!worker || worker.state === 'Ready') {
     return null
   }
@@ -42,19 +15,19 @@ const WorkerStatusBanner = () => {
       <Alert
         type="error"
         showIcon
-        message="Training worker is not available"
+        banner
+        message="The training engine (Python + TensorFlow) could not start. Models cannot be trained until this is fixed."
         description={
-          <div>
+          <div className="text-xs">
             <div style={{ whiteSpace: 'pre-wrap' }}>{worker.message}</div>
-            {status.logFile && <div className="mt-2">Log: {status.logFile}</div>}
+            {status.logFile && <div className="mt-1 text-slate-500">Log file: {status.logFile}</div>}
           </div>
         }
         action={
           <Button size="small" onClick={retry} loading={retrying}>
-            Retry
+            Try again
           </Button>
         }
-        style={{ margin: '16px 16px 0' }}
       />
     )
   }
@@ -63,8 +36,8 @@ const WorkerStatusBanner = () => {
     <Alert
       type="info"
       showIcon
-      message="Starting the training worker (loading TensorFlow)…"
-      style={{ margin: '16px 16px 0' }}
+      banner
+      message="Starting the training engine (loading TensorFlow). This usually takes 10–30 seconds. You can set up sessions in the meantime."
     />
   )
 }

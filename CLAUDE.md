@@ -20,7 +20,12 @@ Code comments and some log messages are in Ukrainian.
   - `SdnnGa.Database` — EF Core `ApiDbContext` (**SQLite**), `Db*` entities, `DbRepository<T>`, migrations, design-time factory
   - `SdnnGa.Infrastructure` — `Worker/PythonWorkerClient` (child-process RPC), `Storage/FileSystemStorage`, Quartz wrappers
 - `Worker/sdnnga_worker.py` — the single Python worker (`create` → Keras JSON, `fit` → loss/accuracy/history/base64 weights). It is linked into the app output as `worker/sdnnga_worker.py`.
-- `SdnnGa.Client/` — React 18 + Vite + Ant Design + Tailwind. It calls relative `/api/`, and the Vite dev server proxies to `127.0.0.1:5080`.
+- `SdnnGa.Client/` — React 18 + Vite + Ant Design + Tailwind. It calls relative `/api/`, and the Vite dev server proxies to `127.0.0.1:5080`. Layout:
+  - `layout/AppLayout.jsx` — sidebar + worker status; `theme.js` holds the antd tokens; `main.jsx` wraps the app in `ConfigProvider` + antd `App` (use `App.useApp()` for `message`, not the static API).
+  - `pages/SessionsPage` (dashboard cards from `GET Sessions/Overview`), `pages/SessionPage` (tabs: `session/SetupTab` with a 4-step wizard `DatasetStep` → `TrainingStep` → `GeneticStep` → `LaunchStep`, and `session/ResultsTab`), `pages/EpochPage` (models table; `?model=<id>` pre-expands a row).
+  - `hooks/useApiData` (ServiceResult fetch + optional polling, spinner only on the first load), `hooks/useWorkerStatus` (one shared `System/Status` poller).
+  - The CSV is inspected client-side (`utils/csv.js`) to show previews, auto-fill input/output counts and suggest a loss function. The model search-space settings are not stored server-side; the last ones used are kept in `localStorage`.
+- Session overview/delete API: `SessionOverviewService` computes the status (`NeedsSetup`/`Ready`/`Running`/`Finished`, where running means pending models or Quartz groups ending in the session id), progress and the best model. `DELETE Sessions/{id}` is refused while running, cascades the DB rows and removes `storage/v1/session-{id}`. Saving a fit or genetic config again updates the existing one (one per session).
 - `build-desktop.ps1` — produces the offline distribution (self-contained publish + embeddable Python with TF).
 - `TestData/` — sample X/Y CSV datasets.
 

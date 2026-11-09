@@ -41,7 +41,21 @@ public class GeneticConfigService : IGeneticConfigService
         {
             geneticConfig.SessionId = sessionId;
             var dbCeneticConfig = _mapper.Map<DbGeneticConfig>(geneticConfig);
-            var createdNewDbGeneticConfig = await _dbRepository.AddAsync(dbCeneticConfig, cancellationToken);
+
+            // Одна конфігурація на сесію: повторне збереження оновлює існуючу (раніше додавався дублікат, який ігнорувався).
+            var existing = (await _dbRepository.GetByFieldAsync(nameof(GeneticConfig.SessionId), sessionId, false, null, cancellationToken)).FirstOrDefault();
+
+            DbGeneticConfig createdNewDbGeneticConfig;
+            if (existing != null)
+            {
+                dbCeneticConfig.Id = existing.Id;
+                dbCeneticConfig.RecCreated = existing.RecCreated;
+                createdNewDbGeneticConfig = await _dbRepository.UpdateAsync(dbCeneticConfig, cancellationToken);
+            }
+            else
+            {
+                createdNewDbGeneticConfig = await _dbRepository.AddAsync(dbCeneticConfig, cancellationToken);
+            }
 
             return ServiceResult<GeneticConfig>.FromSuccess(_mapper.Map<GeneticConfig>(createdNewDbGeneticConfig));
         }

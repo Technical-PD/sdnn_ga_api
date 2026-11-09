@@ -46,6 +46,12 @@ public static class NeuralNetworkMutation
             {
                 mutatedModel.InternalLayers[i].ActivationFunc = GetRandomActivationFunction(mutatedModel.InternalLayers[i].ActivationFunc);
             }
+
+            // Toggle the layer bias with some probability (раніше biasProb передавався, але не використовувався)
+            if (random.NextDouble() < biasProb)
+            {
+                mutatedModel.InternalLayers[i].UseBias = !mutatedModel.InternalLayers[i].UseBias;
+            }
         }
 
         // Mutate the number of internal layers with a small probability

@@ -77,6 +77,18 @@ public class FileSystemStorage : IStorage
         return Task.CompletedTask;
     }
 
+    public Task DeleteDirectoryAsync(string directory)
+    {
+        var fullPath = ResolvePath(directory);
+
+        if (Directory.Exists(fullPath))
+        {
+            Directory.Delete(fullPath, recursive: true);
+        }
+
+        return Task.CompletedTask;
+    }
+
     public string ReadStreamToString(Stream stream, Encoding encoding)
     {
         if (stream == null)

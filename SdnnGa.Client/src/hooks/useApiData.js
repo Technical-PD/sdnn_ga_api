@@ -1,16 +1,21 @@
-import { message } from 'antd'
+import { App } from 'antd'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import apiCall from '../utils/apiCall'
 
 /**
  * Завантажує `entity` з API (ServiceResult) і, за потреби, періодично оновлює дані.
- * Спінер (`loading`) показується лише при першому завантаженні, щоб список не "блимав" під час опитування.
+ * Спінер (`loading`) показується лише при першому завантаженні, щоб сторінка не "блимала" під час опитування.
  * Повертає [data, loading, refresh].
  */
-const useApiData = (url, { pollIntervalMs = 0, errorMessage = 'Failed to fetch data' } = {}) => {
-  const [data, setData] = useState([])
-  const [loading, setLoading] = useState(false)
+const useApiData = (
+  url,
+  { pollIntervalMs = 0, initialData = null, errorMessage = 'Failed to load data' } = {}
+) => {
+  const { message } = App.useApp()
+  const [data, setData] = useState(initialData)
+  const [loading, setLoading] = useState(Boolean(url))
   const loadedOnce = useRef(false)
+  const initialDataRef = useRef(initialData)
 
   const refresh = useCallback(async () => {
     if (!url) {
@@ -26,9 +31,9 @@ const useApiData = (url, { pollIntervalMs = 0, errorMessage = 'Failed to fetch d
       const result = await apiCall(url)
 
       if (result?.isError) {
-        isFirstLoad && message.error(result?.message)
+        isFirstLoad && message.error(result?.message || errorMessage)
       } else {
-        setData(result?.entity || [])
+        setData(result?.entity ?? initialDataRef.current)
       }
     } catch {
       // Під час фонового опитування не засипаємо користувача однаковими помилками.
@@ -39,7 +44,7 @@ const useApiData = (url, { pollIntervalMs = 0, errorMessage = 'Failed to fetch d
         setLoading(false)
       }
     }
-  }, [url, errorMessage])
+  }, [url, errorMessage, message])
 
   useEffect(() => {
     loadedOnce.current = false

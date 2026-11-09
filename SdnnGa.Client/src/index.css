@@ -2,14 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin-left: -10px;
-  overflow: hidden;
-  margin-top: -5px;
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
 }
 
-h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
+body {
+  background: #f4f5fa;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Таблиці з клікабельними рядками. */
+.clickable-rows .ant-table-tbody > tr:not(.ant-table-expanded-row) {
+  cursor: pointer;
+}
+
+/* Картки, що реагують на наведення. */
+.session-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.session-card:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
 }

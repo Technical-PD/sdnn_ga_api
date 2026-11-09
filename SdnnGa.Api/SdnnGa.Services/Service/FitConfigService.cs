@@ -36,7 +36,20 @@ public class FitConfigService : IFitConfigService
         {
             var dbFitConfig = _mapper.Map<DbFitConfig>(fitConfig);
 
-            var dbFitConfigCreated = await _dbRepository.AddAsync(dbFitConfig, cancellationToken);
+            // Одна конфігурація на сесію: повторне збереження оновлює існуючу (раніше додавався дублікат, який ігнорувався).
+            var existing = (await _dbRepository.GetByFieldAsync("SessionId", fitConfig.SessionId, false, null, cancellationToken)).FirstOrDefault();
+
+            DbFitConfig dbFitConfigCreated;
+            if (existing != null)
+            {
+                dbFitConfig.Id = existing.Id;
+                dbFitConfig.RecCreated = existing.RecCreated;
+                dbFitConfigCreated = await _dbRepository.UpdateAsync(dbFitConfig, cancellationToken);
+            }
+            else
+            {
+                dbFitConfigCreated = await _dbRepository.AddAsync(dbFitConfig, cancellationToken);
+            }
 
             if (dbFitConfigCreated == null)
             {
