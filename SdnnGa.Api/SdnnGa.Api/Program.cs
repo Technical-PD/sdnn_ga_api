@@ -18,6 +18,9 @@ using SdnnGa.Database.Models;
 using SdnnGa.Database.Repository;
 using SdnnGa.Infrastructure.Quartz.Scheduler;
 using SdnnGa.Infrastructure.Storage;
+using SdnnGa.Infrastructure.Training;
+using SdnnGa.Model.Infrastructure.Interfaces.Training;
+using SdnnGa.Model.Constants;
 using SdnnGa.Infrastructure.Worker;
 using SdnnGa.Model.Core.Interfaces;
 using SdnnGa.Model.Database.Interfaces.Repository;
@@ -147,6 +150,10 @@ public static class Program
         builder.Services.AddSingleton<IModelWorkerClient, PythonWorkerClient>();
         builder.Services.AddHostedService<WorkerWarmupService>();
 
+        // Прогрес навчання та зупинка пошуку (у пам'яті)
+        builder.Services.AddSingleton<ITrainingProgressTracker, TrainingProgressTracker>();
+        builder.Services.AddSingleton<IGeneticFlowStopRegistry, GeneticFlowStopRegistry>();
+
         // Файли на локальному диску (замість Azure Blob Storage)
         builder.Services.AddSingleton<IStorage>(new FileSystemStorage(appPaths.StorageDirectory));
 
@@ -211,7 +218,7 @@ public static class Program
             .Where(model => !model.IsTrained && model.FitError == null)
             .ExecuteUpdate(setters => setters.SetProperty(
                 model => model.FitError,
-                "Interrupted: the application was closed before this model finished training."));
+                ModelStatusMessages.Interrupted));
 
         if (interrupted > 0)
         {

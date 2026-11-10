@@ -21,4 +21,12 @@ public class AddGeneticConfigRequest
     public float BiasMutationProb { get; set; }
 
     public string SelectionCriterion { get; set; }
+
+    public string EvolutionStrategy { get; set; }
+
+    public string CrossoverMethod { get; set; }
+
+    public string FirstParentCriterion { get; set; }
+
+    public string SecondParentCriterion { get; set; }
 }

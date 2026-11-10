@@ -34,6 +34,18 @@ public class DbGeneticConfig : BaseModel
     [Required]
     public string SelectionCriterion { get; set; }
 
+    /// <summary><see cref="SdnnGa.Model.Constants.EvolutionStrategy"/>; <c>null</c> — мутація (конфіги до появи схрещування).</summary>
+    public string EvolutionStrategy { get; set; }
+
+    /// <summary><see cref="SdnnGa.Model.Constants.CrossoverMethod"/>.</summary>
+    public string CrossoverMethod { get; set; }
+
+    /// <summary>Критерій вибору першого батька для схрещування (<see cref="SdnnGa.Model.Constants.SelectionCriterion"/>).</summary>
+    public string FirstParentCriterion { get; set; }
+
+    /// <summary>Критерій вибору другого батька для схрещування (<see cref="SdnnGa.Model.Constants.SelectionCriterion"/>).</summary>
+    public string SecondParentCriterion { get; set; }
+
     [Required]
     [ForeignKey("Session")]
     public string SessionId { get; set; }

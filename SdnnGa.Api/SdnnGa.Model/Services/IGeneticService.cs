@@ -11,4 +11,7 @@ public interface IGeneticService
         ModelRangeConfig modelRangeConfig,
         string sessionId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Зупиняє генетичний пошук сесії: скасовує поточні джоби, не запускає нове покоління.</summary>
+    Task<ServiceResult> StopGeneticFlow(string sessionId, CancellationToken cancellationToken = default);
 }

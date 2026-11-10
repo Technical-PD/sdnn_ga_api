@@ -118,6 +118,15 @@ namespace SdnnGa.Database.Migrations
                     b.Property<float>("CountOfNeuronMutationProb")
                         .HasColumnType("REAL");
 
+                    b.Property<string>("CrossoverMethod")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EvolutionStrategy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FirstParentCriterion")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("MaxEpoches")
                         .HasColumnType("INTEGER");
 
@@ -130,6 +139,9 @@ namespace SdnnGa.Database.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("RecModified")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SecondParentCriterion")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SelectionCriterion")
@@ -189,6 +201,12 @@ namespace SdnnGa.Database.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Origin")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParentModelNames")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("RecCreated")

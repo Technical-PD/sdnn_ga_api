@@ -1,12 +1,14 @@
 ﻿using SdnnGa.Model.Models.Core.NNModel;
 using System.Collections.Generic;
+using System.Linq;
 using System;
 
 namespace SdnnGa.Core.Classes;
 
 public static class NeuralNetworkMutation
 {
-    private static Random random = new Random(DateTime.UtcNow.Millisecond);
+    // Random.Shared потокобезпечний: мутації виконуються паралельно в кількох Quartz-джобах.
+    private static Random random => Random.Shared;
     private static List<string> activationFunctions = new List<string> { "relu", "sigmoid", "tanh", "softmax", "linear" };
 
     public static ModelConfig Mutate(ModelConfig model, float actFuncProb, float countOfNeuronProb, float countOfInternalLayerProb, float biasProb)
@@ -15,7 +17,10 @@ public static class NeuralNetworkMutation
         var mutatedModel = new ModelConfig
         {
             InputShape = (int[])model.InputShape.Clone(),
-            InternalLayers = new List<Layer>(model.InternalLayers),
+            // Глибока копія шарів: мутація не повинна змінювати об'єкти батьківської моделі.
+            InternalLayers = model.InternalLayers
+                .Select(layer => new Layer { NeuronsCount = layer.NeuronsCount, ActivationFunc = layer.ActivationFunc, UseBias = layer.UseBias })
+                .ToList(),
             OutputLayer = new Layer
             {
                 NeuronsCount = model.OutputLayer.NeuronsCount,

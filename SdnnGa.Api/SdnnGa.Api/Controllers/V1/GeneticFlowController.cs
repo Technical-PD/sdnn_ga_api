@@ -27,4 +27,13 @@ public class GeneticFlowController : ControllerBase
 
         return Ok(result);
     }
+
+    /// <summary>
+    /// Зупиняє генетичний пошук сесії. Навчені моделі зберігаються, незавершені позначаються як зупинені.
+    /// </summary>
+    [HttpPost("Stop")]
+    public async Task<IActionResult> StopFlow([FromQuery] string sessionId, CancellationToken cancellationToken = default)
+    {
+        return Ok(await _geneticService.StopGeneticFlow(sessionId, cancellationToken));
+    }
 }

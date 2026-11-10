@@ -1,4 +1,4 @@
-import { Alert, Button } from 'antd'
+import { Alert, Button, Progress } from 'antd'
 import { useWorkerStatus } from '../hooks/useWorkerStatus'
 
 // Показується над сторінкою, лише поки воркер не готовий (запуск або помилка).
@@ -37,7 +37,16 @@ const WorkerStatusBanner = () => {
       type="info"
       showIcon
       banner
-      message="Starting the training engine (loading TensorFlow). This usually takes 10–30 seconds. You can set up sessions in the meantime."
+      message={
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span>
+            Starting the training engine: {worker.message || 'loading TensorFlow'}. You can set up sessions in the meantime.
+          </span>
+          {worker.progress != null && (
+            <Progress percent={worker.progress} size="small" status="active" className="!m-0 w-48" />
+          )}
+        </div>
+      }
     />
   )
 }

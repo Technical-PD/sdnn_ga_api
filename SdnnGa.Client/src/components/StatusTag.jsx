@@ -4,6 +4,7 @@ import {
   ClockCircleOutlined,
   CloseCircleOutlined,
   PlayCircleOutlined,
+  StopOutlined,
   SyncOutlined,
   ToolOutlined
 } from '@ant-design/icons'
@@ -14,7 +15,8 @@ const SESSION_STATUS = {
   NeedsSetup: { color: 'default', icon: <ToolOutlined />, text: 'Needs setup' },
   Ready: { color: 'blue', icon: <PlayCircleOutlined />, text: 'Ready to run' },
   Running: { color: 'processing', icon: <SyncOutlined spin />, text: 'Running' },
-  Finished: { color: 'success', icon: <CheckCircleOutlined />, text: 'Finished' }
+  Finished: { color: 'success', icon: <CheckCircleOutlined />, text: 'Finished' },
+  Stopped: { color: 'warning', icon: <StopOutlined />, text: 'Stopped' }
 }
 
 export const SessionStatusTag = ({ status }) => {
@@ -33,7 +35,8 @@ SessionStatusTag.propTypes = {
 const MODEL_STATUS = {
   Trained: { color: 'success', icon: <CheckCircleOutlined />, text: 'Trained' },
   Failed: { color: 'error', icon: <CloseCircleOutlined />, text: 'Failed' },
-  Training: { color: 'processing', icon: <SyncOutlined spin />, text: 'In progress' },
+  Stopped: { color: 'default', icon: <StopOutlined />, text: 'Stopped' },
+  Training: { color: 'processing', icon: <ClockCircleOutlined />, text: 'Waiting to train' },
   Queued: { color: 'default', icon: <ClockCircleOutlined />, text: 'Queued' }
 }
 

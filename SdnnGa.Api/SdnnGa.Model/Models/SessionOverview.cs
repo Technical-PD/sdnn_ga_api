@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace SdnnGa.Model.Models;
@@ -40,6 +40,9 @@ public class SessionOverview
 
     public int FailedModelCount { get; set; }
 
+    /// <summary>Моделі, навчання яких зупинив користувач або перервало закриття застосунку.</summary>
+    public int StoppedModelCount { get; set; }
+
     public int PendingModelCount { get; set; }
 
     /// <summary>Найкраща модель сесії за критерієм відбору (лише успішно навчені).</summary>
@@ -71,6 +74,8 @@ public class EpochOverview
 
     public int FailedModelCount { get; set; }
 
+    public int StoppedModelCount { get; set; }
+
     public int PendingModelCount { get; set; }
 
     public float? BestAccuracy { get; set; }
@@ -84,4 +89,5 @@ public static class SessionStatus
     public const string Ready = "Ready";
     public const string Running = "Running";
     public const string Finished = "Finished";
+    public const string Stopped = "Stopped";
 }

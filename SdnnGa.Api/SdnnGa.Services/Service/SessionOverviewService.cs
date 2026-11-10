@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SdnnGa.Database;
 using SdnnGa.Model.Constants;
 using SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
@@ -133,7 +133,8 @@ public class SessionOverviewService : ISessionOverviewService
                 SelectionCriterion = selectionCriterion,
                 ModelCount = sessionModels.Count,
                 TrainedModelCount = sessionModels.Count(IsSuccessful),
-                FailedModelCount = sessionModels.Count(model => model.FitError != null),
+                FailedModelCount = sessionModels.Count(IsFailed),
+                StoppedModelCount = sessionModels.Count(IsStopped),
                 PendingModelCount = sessionModels.Count(IsPending),
                 BestModelId = bestModel?.Id,
                 BestModelName = bestModel?.Name,
@@ -143,7 +144,12 @@ public class SessionOverviewService : ISessionOverviewService
             };
 
             overview.IsRunning = overview.PendingModelCount > 0 || sessionsWithJobs.Contains(session.Id);
+            // Зупинена — якщо в останньому поколінні є моделі, скасовані користувачем.
+            var lastEpochId = epochs[session.Id].OrderByDescending(epoch => epoch.EpochNo).FirstOrDefault()?.Id;
+            var lastEpochStopped = lastEpochId != null && sessionModels.Any(model => model.EpochId == lastEpochId && IsStopped(model));
+
             overview.Status = overview.IsRunning ? SessionStatus.Running
+                : lastEpochStopped ? SessionStatus.Stopped
                 : overview.EpochCount > 0 ? SessionStatus.Finished
                 : overview.HasData && overview.HasFitConfig && overview.HasGeneticConfig ? SessionStatus.Ready
                 : SessionStatus.NeedsSetup;
@@ -166,7 +172,8 @@ public class SessionOverviewService : ISessionOverviewService
                             RecCreated = epoch.RecCreated,
                             ModelCount = epochModels.Count,
                             TrainedModelCount = successful.Count,
-                            FailedModelCount = epochModels.Count(model => model.FitError != null),
+                            FailedModelCount = epochModels.Count(IsFailed),
+                            StoppedModelCount = epochModels.Count(IsStopped),
                             PendingModelCount = epochModels.Count(IsPending),
                             BestAccuracy = successful.Count > 0 ? successful.Max(model => model.Accuracy) : null,
                             BestLoss = successful.Count > 0 ? successful.Min(model => model.Loss) : null,
@@ -200,6 +207,11 @@ public class SessionOverviewService : ISessionOverviewService
     private static bool IsSuccessful(ModelRow model) => model.IsTrained && model.FitError == null;
 
     private static bool IsPending(ModelRow model) => !model.IsTrained && model.FitError == null;
+
+    private static bool IsStopped(ModelRow model) =>
+        model.FitError is ModelStatusMessages.StoppedByUser or ModelStatusMessages.Interrupted;
+
+    private static bool IsFailed(ModelRow model) => model.FitError != null && !IsStopped(model);
 
     private static ModelRow SelectBest(IEnumerable<ModelRow> models, string selectionCriterion)
     {

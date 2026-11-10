@@ -2,6 +2,7 @@
 using SdnnGa.Model.Constants;
 using SdnnGa.Model.Core.Interfaces;
 using SdnnGa.Model.Infrastructure.Interfaces.Storage;
+using SdnnGa.Model.Infrastructure.Interfaces.Training;
 using SdnnGa.Model.Infrastructure.Interfaces.Worker;
 using SdnnGa.Model.Models;
 using SdnnGa.Model.Models.Core.NNModel;
@@ -22,20 +23,28 @@ public class FitModelJob : IFitModelJob
     private readonly IModelWorkerClient _workerClient;
     private readonly IStorage _storage;
     private readonly INeuralNetworkModelService _neuralNetworkModelService;
+    private readonly ITrainingProgressTracker _progressTracker;
+    private readonly IGeneticFlowStopRegistry _stopRegistry;
 
     private string _modelId;
     private string _sessionId;
+    private string _epochId;
+    private string _modelName;
     private string _epocheNo;
     private string _weigthPath;
 
     public FitModelJob(
         IModelWorkerClient workerClient,
         IStorage storage,
-        INeuralNetworkModelService neuralNetworkModelService)
+        INeuralNetworkModelService neuralNetworkModelService,
+        ITrainingProgressTracker progressTracker,
+        IGeneticFlowStopRegistry stopRegistry)
     {
         _workerClient = workerClient;
         _storage = storage;
         _neuralNetworkModelService = neuralNetworkModelService;
+        _progressTracker = progressTracker;
+        _stopRegistry = stopRegistry;
     }
 
     public async Task Execute(IJobExecutionContext context)
@@ -50,9 +59,18 @@ public class FitModelJob : IFitModelJob
                 return;
             }
 
+            if (_stopRegistry.IsStopRequested(_sessionId))
+            {
+                await ModelFailureRecorder.RecordAsync(_neuralNetworkModelService, _modelId, ModelStatusMessages.StoppedByUser);
+                return;
+            }
+
             Console.WriteLine($"Start fit model {_modelId}");
 
-            var fitResult = await _workerClient.FitModelAsync(fitModelJobConfig, context.CancellationToken);
+            var fitResult = await _workerClient.FitModelAsync(
+                fitModelJobConfig,
+                progress => _progressTracker.Report(_modelId, _modelName, _sessionId, _epochId, progress),
+                context.CancellationToken);
 
             if (!string.IsNullOrEmpty(fitResult.Weights))
             {
@@ -78,10 +96,19 @@ public class FitModelJob : IFitModelJob
 
             Console.WriteLine($"End fit model {_modelId} (loss={fitResult.Loss}, accuracy={fitResult.Accuracy})");
         }
+        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested || _stopRegistry.IsStopRequested(_sessionId))
+        {
+            Console.WriteLine($"FitModelJob for model '{_modelId}' was stopped.");
+            await ModelFailureRecorder.RecordAsync(_neuralNetworkModelService, _modelId, ModelStatusMessages.StoppedByUser);
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"FitModelJob failed for model '{_modelId}': {ex}");
             await ModelFailureRecorder.RecordAsync(_neuralNetworkModelService, _modelId, $"Training failed: {ex.Message}");
+        }
+        finally
+        {
+            _progressTracker.Complete(_modelId);
         }
     }
 
@@ -108,6 +135,8 @@ public class FitModelJob : IFitModelJob
         };
 
         var model = await WaitForCreatedModelAsync(context.CancellationToken);
+        _epochId = model.EpocheId;
+        _modelName = model.Name;
 
         if (model.FitError != null)
         {

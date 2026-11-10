@@ -1,4 +1,4 @@
-using SdnnGa.Model.Services;
+﻿using SdnnGa.Model.Services;
 using System;
 using System.Threading.Tasks;
 
@@ -19,11 +19,17 @@ internal static class ModelFailureRecorder
 
         try
         {
-            var modelResult = await modelService.GetModelByIdAsync(modelId);
+            var modelResult = await modelService.GetModelByIdAsync(modelId, default, useTracking: false);
 
             if (modelResult.IsError || modelResult.Entity == null)
             {
                 Console.WriteLine($"Could not record failure for model '{modelId}': {modelResult.Message}");
+                return;
+            }
+
+            // Не перезаписуємо вже записану причину (наприклад, "Stopped by user").
+            if (modelResult.Entity.FitError != null || modelResult.Entity.IsTrained)
+            {
                 return;
             }
 

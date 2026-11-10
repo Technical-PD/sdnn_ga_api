@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SdnnGa.Model.Infrastructure.Interfaces.Training;
 using Quartz;
 using SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
 using SdnnGa.Model.Services;
@@ -37,6 +38,7 @@ public class ParentJobCompletionListenerFactory
         return new ParentJobCompletionListener(
             neuralNetworkModelService: neuralNetworkModelService,
             scheduler: scheduler,
+            stopRegistry: _serviceProvider.GetRequiredService<IGeneticFlowStopRegistry>(),
             jobScheduler: jobScheduler,
             scope: scope,
             parentJobKey: parentJobKey,

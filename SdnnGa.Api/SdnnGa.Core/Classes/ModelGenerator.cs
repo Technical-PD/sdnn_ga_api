@@ -10,7 +10,8 @@ public class ModelGenerator : IModelGenerator
 {
     public ModelConfig GenerateRandomModelConfig(ModelRangeConfig modelRangeConfig)
     {
-        var random = new Random(DateTime.UtcNow.Millisecond);
+        // Random.Shared: однакове зерно (мілісекунда) у паралельних джобах давало однакові "випадкові" моделі.
+        var random = Random.Shared;
 
         var internaLayers = new List<Layer>();
 

@@ -23,5 +23,17 @@ public class GeneticConfig : BaseModel
 
     public string SelectionCriterion { get; set; }
 
+    /// <summary><see cref="Constants.EvolutionStrategy"/>; <c>null</c> — мутація (конфіги до появи схрещування).</summary>
+    public string EvolutionStrategy { get; set; }
+
+    /// <summary><see cref="Constants.CrossoverMethod"/>.</summary>
+    public string CrossoverMethod { get; set; }
+
+    /// <summary>Критерій вибору першого батька для схрещування (<see cref="Constants.SelectionCriterion"/>).</summary>
+    public string FirstParentCriterion { get; set; }
+
+    /// <summary>Критерій вибору другого батька для схрещування (<see cref="Constants.SelectionCriterion"/>).</summary>
+    public string SecondParentCriterion { get; set; }
+
     public string SessionId { get; set; }
 }

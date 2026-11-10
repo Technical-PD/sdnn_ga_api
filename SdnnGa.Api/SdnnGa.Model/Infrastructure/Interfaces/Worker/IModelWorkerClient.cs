@@ -1,5 +1,6 @@
-using SdnnGa.Model.Models.Core.NNModel;
+﻿using SdnnGa.Model.Models.Core.NNModel;
 using SdnnGa.Model.Models.Core.Worker;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,5 +21,6 @@ public interface IModelWorkerClient
     Task<string> CreateModelAsync(ModelConfig modelConfig, CancellationToken cancellationToken = default);
 
     /// <summary>Навчає модель і повертає метрики, історію та ваги (base64).</summary>
-    Task<FitResult> FitModelAsync(FitModelJobConfig fitConfig, CancellationToken cancellationToken = default);
+    /// <param name="onProgress">Викликається на початку навчання та після кожної епохи.</param>
+    Task<FitResult> FitModelAsync(FitModelJobConfig fitConfig, Action<FitProgress> onProgress = null, CancellationToken cancellationToken = default);
 }

@@ -3,6 +3,7 @@ using SdnnGa.Core.Classes;
 using SdnnGa.Model.Constants;
 using SdnnGa.Model.Core.Interfaces;
 using SdnnGa.Model.Infrastructure.Interfaces.Storage;
+using SdnnGa.Model.Infrastructure.Interfaces.Training;
 using SdnnGa.Model.Infrastructure.Interfaces.Worker;
 using SdnnGa.Model.Models.Core.GAConfigs;
 using SdnnGa.Model.Models.Core.NNModel;
@@ -19,6 +20,9 @@ public class CreateModelJob : ICreateModelJob
 {
     private ModelRangeConfig _modelRangeConfig;
     private ModelConfig _modelConfig;
+    private ModelConfig _secondParentConfig;
+    private string _operation;
+    private string _crossoverMethod;
     private string _modelStoragePath;
     private string _modelNetStoragePath;
     private string _sessionId;
@@ -34,13 +38,16 @@ public class CreateModelJob : ICreateModelJob
     private readonly INeuralNetworkModelService _networkModelService;
     private readonly IModelGenerator _modelGenerator;
     private readonly IStorage _storage;
+    private readonly IGeneticFlowStopRegistry _stopRegistry;
 
     public CreateModelJob(
         IModelWorkerClient workerClient,
         INeuralNetworkModelService networkModelService,
         IModelGenerator modelGenerator,
-        IStorage storage)
+        IStorage storage,
+        IGeneticFlowStopRegistry stopRegistry)
     {
+        _stopRegistry = stopRegistry;
         _networkModelService = networkModelService;
         _workerClient = workerClient;
         _modelGenerator = modelGenerator;
@@ -53,21 +60,19 @@ public class CreateModelJob : ICreateModelJob
         {
             await InizializeSettingValuesAsync(context);
 
-            ModelConfig model;
+            if (_stopRegistry.IsStopRequested(_sessionId))
+            {
+                await ModelFailureRecorder.RecordAsync(_networkModelService, _modelId, ModelStatusMessages.StoppedByUser);
+                return;
+            }
 
-            if (_epocheNo == "0")
+            ModelConfig model = _operation switch
             {
-                model = _modelGenerator.GenerateRandomModelConfig(_modelRangeConfig);
-            }
-            else
-            {
-                model = NeuralNetworkMutation.Mutate(
-                    model: _modelConfig,
-                    actFuncProb: _actFuncMutationProb,
-                    countOfNeuronProb: _countOfNeuronMutationProb,
-                    countOfInternalLayerProb: _countOfInternalLayerMutationProb,
-                    biasProb: _biasMutationProb);
-            }
+                ModelOrigin.Random => _modelGenerator.GenerateRandomModelConfig(_modelRangeConfig),
+                ModelOrigin.Crossover => Cross(),
+                ModelOrigin.CrossoverAndMutation => Mutate(Cross()),
+                _ => Mutate(_modelConfig),
+            };
 
             string modelJson = JsonSerializer.Serialize(model);
 
@@ -90,6 +95,11 @@ public class CreateModelJob : ICreateModelJob
 
             await _networkModelService.UpdateModelAssync(modelToUpdateResult.Entity);
         }
+        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested || _stopRegistry.IsStopRequested(_sessionId))
+        {
+            Console.WriteLine($"CreateModelJob for model '{_modelId}' was stopped.");
+            await ModelFailureRecorder.RecordAsync(_networkModelService, _modelId, ModelStatusMessages.StoppedByUser);
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"CreateModelJob failed for model '{_modelId}': {ex}");
@@ -99,23 +109,54 @@ public class CreateModelJob : ICreateModelJob
         }
     }
 
+    private ModelConfig Cross()
+    {
+        if (_modelConfig == null || _secondParentConfig == null)
+        {
+            throw new InvalidOperationException("Crossover requires two parent models.");
+        }
+
+        return NeuralNetworkCrossover.Cross(_modelConfig, _secondParentConfig, _crossoverMethod);
+    }
+
+    private ModelConfig Mutate(ModelConfig model) => NeuralNetworkMutation.Mutate(
+        model: model ?? throw new InvalidOperationException("Mutation requires a parent model."),
+        actFuncProb: _actFuncMutationProb,
+        countOfNeuronProb: _countOfNeuronMutationProb,
+        countOfInternalLayerProb: _countOfInternalLayerMutationProb,
+        biasProb: _biasMutationProb);
+
+    private async Task<ModelConfig> LoadParentConfigAsync(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return null;
+        }
+
+        using var memoryStream = await _storage.GetFileAsync(path)
+            ?? throw new FileNotFoundException($"Parent model config '{path}' was not found in storage.");
+
+        return JsonSerializer.Deserialize<ModelConfig>(_storage.ReadStreamToString(memoryStream, Encoding.UTF8));
+    }
+
     private async Task InizializeSettingValuesAsync(IJobExecutionContext context)
     {
         var jobDataMap = context.JobDetail.JobDataMap;
 
         _modelId = jobDataMap.GetString(JobSettings.CreateModel.ModelIdSettingName);
+        _epocheNo = jobDataMap.GetString(JobSettings.CreateModel.EpocheNoSettingName);
 
-        string modelConfigNetPath = jobDataMap.GetString(JobSettings.CreateModel.ModelConfigNetPathSettingName);
+        _modelConfig = await LoadParentConfigAsync(jobDataMap.GetString(JobSettings.CreateModel.ModelConfigNetPathSettingName));
+        _secondParentConfig = await LoadParentConfigAsync(jobDataMap.GetString(JobSettings.CreateModel.SecondParentConfigNetPathSettingName));
 
-        if (!string.IsNullOrEmpty(modelConfigNetPath))
+        // Операцію визначає GeneticEpochJob; без неї (джоби старого формату) — випадкова модель для 0-го покоління, інакше мутація.
+        _operation = jobDataMap.GetString(JobSettings.CreateModel.OperationSettingName);
+        if (string.IsNullOrEmpty(_operation))
         {
-            using (var memoryStream = await _storage.GetFileAsync(modelConfigNetPath)
-                ?? throw new FileNotFoundException($"Parent model config '{modelConfigNetPath}' was not found in storage."))
-            {
-                var modelConfigString = _storage.ReadStreamToString(memoryStream, Encoding.UTF8);
-                _modelConfig = JsonSerializer.Deserialize<ModelConfig>(modelConfigString);
-            }
+            _operation = _epocheNo == "0" ? ModelOrigin.Random : ModelOrigin.Mutation;
         }
+
+        _crossoverMethod = jobDataMap.GetString(JobSettings.CreateModel.CrossoverMethodSettingName) ?? CrossoverMethod.SinglePoint;
 
         string modelRangeConfig = jobDataMap.GetString(JobSettings.CreateModel.ModelRangeConfigSettingName);
 
@@ -125,7 +166,6 @@ public class CreateModelJob : ICreateModelJob
         }
 
         _sessionId = jobDataMap.GetString(JobSettings.CreateModel.SessionIdSettingName);
-        _epocheNo = jobDataMap.GetString(JobSettings.CreateModel.EpocheNoSettingName);
 
         _actFuncMutationProb = float.Parse(jobDataMap.GetString(JobSettings.CreateModel.ActFuncMutationProbSettingName));
         _countOfNeuronMutationProb = float.Parse(jobDataMap.GetString(JobSettings.CreateModel.CountOfNeuronMutationProbSettingName));

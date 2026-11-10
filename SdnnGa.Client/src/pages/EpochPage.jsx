@@ -9,7 +9,11 @@ import { modelState } from '../utils/modelState'
 import MetricsChart from '../components/MetricsChart'
 import ModelArchitecture from '../components/ModelArchitecture'
 import useApiData from '../hooks/useApiData'
-import { labelOf, SELECTION_CRITERIA } from '../constants/options'
+import useTrainingProgress from '../hooks/useTrainingProgress'
+import { GenerationProgress, ModelTrainingProgress } from '../components/TrainingProgress'
+import { fractionOf } from '../utils/progress'
+import StopSearchButton from '../components/StopSearchButton'
+import { labelOf, MODEL_ORIGINS, SELECTION_CRITERIA } from '../constants/options'
 import { downloadStorageFile } from '../utils/storageFiles'
 import { formatLoss, formatPercent } from '../utils/format'
 import NotFoundPage from './NotFoundPage'
@@ -22,7 +26,53 @@ const parseHistory = fitHistory => {
   }
 }
 
-const STATE_ORDER = { Trained: 0, Training: 1, Queued: 2, Failed: 3 }
+const STATE_ORDER = { Trained: 0, Training: 1, Queued: 2, Stopped: 3, Failed: 4 }
+
+// Моделі, створені до появи схрещування, не мають origin: 0-ве покоління — випадкове, решта — мутації.
+const originOf = (model, epochNo) => model.origin ?? (epochNo === 0 ? 'Random' : 'Mutation')
+
+const parentsOf = model =>
+  (model.parentModelNames || '')
+    .split(',')
+    .map(name => name.trim())
+    .filter(Boolean)
+
+const OriginCell = ({ model, epochNo }) => {
+  const origin = originOf(model, epochNo)
+  const view = MODEL_ORIGINS[origin] ?? MODEL_ORIGINS.Mutation
+  const parents = parentsOf(model)
+
+  return (
+    <div>
+      <Tag color={view.color} className="m-0">
+        {view.label}
+      </Tag>
+      {parents.length > 0 && (
+        <div className="text-xs text-slate-500 mt-1">
+          {origin === 'Mutation' ? 'of ' : ''}
+          {parents.join(' × ')}
+        </div>
+      )}
+    </div>
+  )
+}
+
+OriginCell.propTypes = { model: PropTypes.object.isRequired, epochNo: PropTypes.number }
+
+// Підзаголовок: як виведено покоління (усі моделі покоління мають однакове походження).
+const describeBreeding = (models, epochNo) => {
+  const sample = models[0]
+  if (!sample) {
+    return ''
+  }
+  const origin = originOf(sample, epochNo)
+  const parents = parentsOf(sample)
+  if (origin === 'Random') {
+    return 'Randomly generated within the search space.'
+  }
+  const how = (MODEL_ORIGINS[origin]?.label ?? origin).toLowerCase()
+  return parents.length > 0 ? `Bred by ${how} of ${parents.join(' × ')}.` : `Bred by ${how}.`
+}
 
 const DownloadMenu = ({ model }) => {
   const { message } = App.useApp()
@@ -125,11 +175,12 @@ const EpochPage = () => {
   // ?model=<id> — відкрити деталі конкретної моделі (посилання "View model" з результатів).
   const [searchParams] = useSearchParams()
   const focusModelId = searchParams.get('model')
-  const [overview, overviewLoading] = useApiData(`Sessions/${sessionId}/Overview`, { pollIntervalMs: 5000 })
-  const [models, modelsLoading] = useApiData(`NeuralNetworkModel/ByEpoche/${epochId}`, {
-    pollIntervalMs: 4000,
+  const [overview, overviewLoading, refreshOverview] = useApiData(`Sessions/${sessionId}/Overview`, { pollIntervalMs: 4000 })
+  const [models, modelsLoading, refreshModels] = useApiData(`NeuralNetworkModel/ByEpoche/${epochId}`, {
+    pollIntervalMs: 3000,
     initialData: []
   })
+  const { byModelId: progressByModel } = useTrainingProgress(sessionId, Boolean(overview?.isRunning))
 
   const epoch = overview?.epochs?.find(item => item.id === epochId)
   const byLoss = (overview?.selectionCriterion ?? 'ByLoss') === 'ByLoss'
@@ -159,6 +210,7 @@ const EpochPage = () => {
 
   const counts = rows.reduce((acc, model) => ({ ...acc, [modelState(model)]: (acc[modelState(model)] || 0) + 1 }), {})
   const inProgress = (counts.Training || 0) + (counts.Queued || 0)
+  const activeFraction = rows.reduce((sum, model) => sum + fractionOf(progressByModel[model.id]), 0)
   const generationNo = epoch?.epochNo ?? '?'
 
   return (
@@ -171,8 +223,31 @@ const EpochPage = () => {
         ]}
         title={`Generation ${generationNo}`}
         tags={inProgress > 0 ? <Tag color="processing">Running</Tag> : <Tag color="success">Complete</Tag>}
-        subtitle={`${rows.length} candidate models, ranked by ${labelOf(SELECTION_CRITERIA, overview.selectionCriterion).toLowerCase()}. Click a model to see its training curves and architecture.`}
+        actions={
+          overview.isRunning && (
+            <StopSearchButton
+              sessionId={sessionId}
+              onStopped={async () => {
+                await Promise.all([refreshOverview(), refreshModels()])
+              }}
+            />
+          )
+        }
+        subtitle={`${describeBreeding(rows, epoch?.epochNo)} ${rows.length} candidate models, ranked by ${labelOf(SELECTION_CRITERIA, overview.selectionCriterion).toLowerCase()}. Click a model to see its training curves and architecture.`}
       />
+
+      <Card size="small" className="mb-4">
+        <Typography.Text type="secondary" className="text-xs">
+          Generation progress
+        </Typography.Text>
+        <GenerationProgress
+          total={rows.length}
+          trained={counts.Trained || 0}
+          failed={counts.Failed || 0}
+          stopped={counts.Stopped || 0}
+          active={activeFraction}
+        />
+      </Card>
 
       <Row gutter={[16, 16]} className="mb-4">
         <Col xs={12} md={6}>
@@ -187,7 +262,12 @@ const EpochPage = () => {
         </Col>
         <Col xs={12} md={6}>
           <Card size="small">
-            <Statistic title="Failed" value={counts.Failed || 0} valueStyle={{ color: counts.Failed ? '#dc2626' : undefined }} />
+            <Statistic
+              title="Failed"
+              value={counts.Failed || 0}
+              valueStyle={{ color: counts.Failed ? '#dc2626' : undefined }}
+              suffix={counts.Stopped ? <span className="text-sm text-slate-500">· {counts.Stopped} stopped</span> : null}
+            />
           </Card>
         </Col>
         <Col xs={12} md={6}>
@@ -224,11 +304,19 @@ const EpochPage = () => {
               )
             },
             {
+              title: 'Created by',
+              key: 'origin',
+              width: 200,
+              render: (_, model) => <OriginCell model={model} epochNo={epoch?.epochNo} />
+            },
+            {
               title: 'Status',
               key: 'status',
-              width: 140,
+              width: 220,
               render: (_, model) =>
-                model.fitError ? (
+                progressByModel[model.id] && !model.isTrained && !model.fitError ? (
+                  <ModelTrainingProgress progress={progressByModel[model.id]} />
+                ) : model.fitError ? (
                   <Tooltip title={model.fitError}>
                     <span>
                       <ModelStatusTag model={model} />

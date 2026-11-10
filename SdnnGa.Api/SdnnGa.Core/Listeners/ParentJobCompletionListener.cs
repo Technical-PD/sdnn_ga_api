@@ -2,6 +2,7 @@
 using SdnnGa.Core.Classes;
 using SdnnGa.Core.Jobs;
 using SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
+using SdnnGa.Model.Infrastructure.Interfaces.Training;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,6 +24,7 @@ public class ParentJobCompletionListener : IJobListener
     private readonly IJobScheduler _jobScheduler;
     private readonly IServiceScope _scope;
     private readonly IScheduler _scheduler;
+    private readonly IGeneticFlowStopRegistry _stopRegistry;
 
     private readonly Dictionary<string, string> _settings;
     private readonly List<IJobDetail> _childJobs;
@@ -36,9 +38,13 @@ public class ParentJobCompletionListener : IJobListener
     private readonly int _maxEpochNo;
     private readonly int _epocheNo;
 
+    // 1 — покоління вже оброблене (кілька дочірніх джоб можуть завершитися одночасно).
+    private int _handled;
+
     public ParentJobCompletionListener(
         INeuralNetworkModelService neuralNetworkModelService,
         IScheduler scheduler,
+        IGeneticFlowStopRegistry stopRegistry,
         IJobScheduler jobScheduler,
         IServiceScope scope,
         JobKey parentJobKey,
@@ -54,6 +60,7 @@ public class ParentJobCompletionListener : IJobListener
     {
         _neuralNetworkModelService = neuralNetworkModelService;
         _scheduler = scheduler;
+        _stopRegistry = stopRegistry;
         _jobScheduler = jobScheduler;
         _scope = scope;
         _parentJobKey = parentJobKey;
@@ -68,7 +75,9 @@ public class ParentJobCompletionListener : IJobListener
         _selectionCriterion = selectionCriterion;
     }
 
-    public string Name => "ParentJobCompletionListener";
+    // Quartz ідентифікує слухачів за назвою: однакова назва для всіх сесій означала, що слухач нової сесії
+    // заміняв слухача іншої, і та сесія більше не переходила до наступного покоління.
+    public string Name => $"ParentJobCompletionListener-{_epochId}";
 
     public async Task JobWasExecuted(IJobExecutionContext context, JobExecutionException jobException, CancellationToken cancellationToken = default)
     {
@@ -88,8 +97,11 @@ public class ParentJobCompletionListener : IJobListener
             }
         }
 
-        if (allChildJobsCompleted)
+        if (allChildJobsCompleted && Interlocked.Exchange(ref _handled, 1) == 0)
         {
+            // Покоління завершене — слухач більше не потрібен.
+            _scheduler.ListenerManager.RemoveJobListener(Name);
+
             ServiceResult<List<NeuralNetworkModel>> trainedModelInLastEpocheResult;
 
             while (true)
@@ -127,7 +139,11 @@ public class ParentJobCompletionListener : IJobListener
                 $" == {_epocheNo < _maxEpochNo && bestModel.AccuracyValue < _stopAccValue && bestModel.LossValue > _stopLossValue}#\n");
             Console.WriteLine("#------------------------------------------------------------------------------#\n");
 
-            if (_epocheNo < _maxEpochNo && bestModel.AccuracyValue < _stopAccValue && bestModel.LossValue > _stopLossValue)
+            if (_stopRegistry.IsStopRequested(_sessionId))
+            {
+                Console.WriteLine($"Genetic flow of session '{_sessionId}' was stopped by the user.");
+            }
+            else if (_epocheNo < _maxEpochNo && bestModel.AccuracyValue < _stopAccValue && bestModel.LossValue > _stopLossValue)
             {
                 Console.WriteLine($"Planning next epoch: {_epocheNo + 1}");
                 await _jobScheduler.ScheduleJobAsync<GeneticEpochJob>($"GeneticEpochRun-{Guid.NewGuid()}", $"Epoche-{_epocheNo + 1}-{_sessionId}", _settings);

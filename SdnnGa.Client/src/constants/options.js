@@ -41,6 +41,57 @@ export const SELECTION_CRITERIA = [
   { value: 'ByAccuracy', label: 'Highest accuracy' }
 ]
 
+export const EVOLUTION_STRATEGIES = [
+  {
+    value: 'Mutation',
+    label: 'Mutation only',
+    description: 'Every child is a randomly changed copy of the best model.'
+  },
+  {
+    value: 'CrossoverAndMutation',
+    label: 'Crossover + mutation',
+    description: 'Children combine the layers of two parents and are then mutated.'
+  },
+  {
+    value: 'Crossover',
+    label: 'Crossover only',
+    description: 'Children combine the layers of two parents, without mutation.'
+  }
+]
+
+export const usesCrossover = strategy => strategy === 'Crossover' || strategy === 'CrossoverAndMutation'
+
+export const CROSSOVER_METHODS = [
+  {
+    value: 'SinglePoint',
+    label: 'Single-point',
+    description: 'Hidden layers before a random cut come from parent A, the rest from parent B. The number of layers can change.'
+  },
+  {
+    value: 'Uniform',
+    label: 'Uniform',
+    description: 'Each hidden layer is copied from a randomly chosen parent.'
+  },
+  {
+    value: 'Blend',
+    label: 'Blend',
+    description: "Each hidden layer gets a neuron count somewhere between the two parents' sizes."
+  }
+]
+
+export const PARENT_CRITERIA = [
+  { value: 'ByAccuracy', label: 'Best accuracy' },
+  { value: 'ByLoss', label: 'Lowest loss' }
+]
+
+// Як отримана модель (NeuralNetworkModel.origin).
+export const MODEL_ORIGINS = {
+  Random: { label: 'Random', color: 'default' },
+  Mutation: { label: 'Mutation', color: 'purple' },
+  Crossover: { label: 'Crossover', color: 'cyan' },
+  CrossoverAndMutation: { label: 'Crossover + mutation', color: 'geekblue' }
+}
+
 export const labelOf = (options, value) => options.find(option => option.value === value)?.label ?? value ?? '—'
 
 export const TRAINING_DEFAULTS = {
@@ -58,7 +109,11 @@ export const GENETIC_DEFAULTS = {
   countOfInternalLayerMutationProb: 20,
   biasMutationProb: 10,
   stopAccValue: 99,
-  stopLossValue: 0.01
+  stopLossValue: 0.01,
+  evolutionStrategy: 'Mutation',
+  crossoverMethod: 'SinglePoint',
+  firstParentCriterion: 'ByAccuracy',
+  secondParentCriterion: 'ByLoss'
 }
 
 export const SEARCH_DEFAULTS = {

@@ -63,6 +63,7 @@ const SessionCard = ({ session, onOpen, onDeleted }) => {
               <span>
                 {session.trainedModelCount} trained
                 {session.failedModelCount > 0 ? ` · ${session.failedModelCount} failed` : ''}
+                {session.stoppedModelCount > 0 ? ` · ${session.stoppedModelCount} stopped` : ''}
               </span>
             </div>
             <Progress

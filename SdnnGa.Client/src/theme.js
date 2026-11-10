@@ -1,33 +1,30 @@
-// Тема Ant Design для всього застосунку. Системні шрифти — застосунок працює без інтернету.
-const theme = {
+import { theme as antTheme } from 'antd'
+
+// Тема Ant Design для світлого та темного режимів. Системні шрифти — застосунок працює без інтернету.
+const FONT =
+  "'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif"
+
+export const buildTheme = isDark => ({
+  algorithm: isDark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
   token: {
-    colorPrimary: '#4f46e5',
-    colorInfo: '#4f46e5',
-    colorSuccess: '#16a34a',
+    colorPrimary: isDark ? '#6366f1' : '#4f46e5',
+    colorInfo: isDark ? '#6366f1' : '#4f46e5',
+    colorSuccess: isDark ? '#22c55e' : '#16a34a',
     colorWarning: '#d97706',
-    colorError: '#dc2626',
-    colorBgLayout: '#f4f5fa',
+    colorError: isDark ? '#ef4444' : '#dc2626',
+    colorBgBase: isDark ? '#0b0f17' : '#ffffff',
+    colorBgLayout: isDark ? '#0b0f17' : '#f4f5fa',
     borderRadius: 8,
-    fontFamily:
-      "'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif"
+    fontFamily: FONT
   },
   components: {
-    Layout: {
-      siderBg: '#ffffff',
-      bodyBg: '#f4f5fa'
-    },
     Menu: {
       itemBorderRadius: 8,
-      itemSelectedBg: '#eef2ff',
-      itemSelectedColor: '#4338ca'
+      ...(isDark ? {} : { itemSelectedBg: '#eef2ff', itemSelectedColor: '#4338ca' })
     },
     Card: {
       paddingLG: 20
     },
-    Table: {
-      headerBg: '#f8fafc'
-    }
+    Table: isDark ? {} : { headerBg: '#f8fafc' }
   }
-}
-
-export default theme
+})

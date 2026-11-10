@@ -67,6 +67,10 @@ public class GeneticConfigController : ControllerBase
             StopLossValue = addGeneticConfigRequest.StopLossValue,
             CountOfModelsInEpoch = addGeneticConfigRequest.CountOfModelsInEpoch,
             SelectionCriterion = addGeneticConfigRequest.SelectionCriterion,
+            EvolutionStrategy = addGeneticConfigRequest.EvolutionStrategy,
+            CrossoverMethod = addGeneticConfigRequest.CrossoverMethod,
+            FirstParentCriterion = addGeneticConfigRequest.FirstParentCriterion,
+            SecondParentCriterion = addGeneticConfigRequest.SecondParentCriterion,
         };
 
         var sessionResult = await _geneticConfigService.AddGeneticConfigAsync(sessionId, geneticConfig, cancellationToken);

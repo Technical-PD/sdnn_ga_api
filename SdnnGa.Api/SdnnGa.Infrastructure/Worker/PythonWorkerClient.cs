@@ -1,4 +1,4 @@
-using SdnnGa.Model.Infrastructure.Interfaces.Worker;
+﻿using SdnnGa.Model.Infrastructure.Interfaces.Worker;
 using SdnnGa.Model.Models.Core.NNModel;
 using SdnnGa.Model.Models.Core.Worker;
 using System;
@@ -33,6 +33,9 @@ public sealed class PythonWorkerClient : IModelWorkerClient, IDisposable
     private Process _process;
     private TaskCompletionSource _readySignal;
     private PendingRequest _inflight;
+
+    // Процес, який ми зупинили навмисно (скасування запиту) — його завершення не є збоєм.
+    private Process _intentionallyStopped;
     private volatile WorkerStatus _status = new(WorkerState.NotStarted, "Worker has not been started yet.");
     private volatile bool _disposed;
 
@@ -84,10 +87,31 @@ public sealed class PythonWorkerClient : IModelWorkerClient, IDisposable
         return result.GetString();
     }
 
-    public async Task<FitResult> FitModelAsync(FitModelJobConfig fitConfig, CancellationToken cancellationToken = default)
+    public async Task<FitResult> FitModelAsync(FitModelJobConfig fitConfig, Action<FitProgress> onProgress = null, CancellationToken cancellationToken = default)
     {
-        var result = await SendAsync("fit", fitConfig, _options.FitModelTimeoutSeconds, cancellationToken);
+        Action<JsonElement> progressHandler = onProgress == null ? null : message => onProgress(ParseFitProgress(message));
+
+        var result = await SendAsync("fit", fitConfig, _options.FitModelTimeoutSeconds, cancellationToken, progressHandler);
         return result.Deserialize<FitResult>();
+    }
+
+    private static FitProgress ParseFitProgress(JsonElement message)
+    {
+        float? Metric(string name) =>
+            message.TryGetProperty("logs", out var logs) && logs.ValueKind == JsonValueKind.Object &&
+            logs.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
+                ? value.GetSingle()
+                : null;
+
+        return new FitProgress
+        {
+            Epoch = message.TryGetProperty("epoch", out var epoch) ? epoch.GetInt32() : 0,
+            Epochs = message.TryGetProperty("epochs", out var epochs) ? epochs.GetInt32() : 0,
+            Loss = Metric("loss"),
+            Accuracy = Metric("accuracy"),
+            ValLoss = Metric("val_loss"),
+            ValAccuracy = Metric("val_accuracy"),
+        };
     }
 
     public void Dispose()
@@ -97,7 +121,7 @@ public sealed class PythonWorkerClient : IModelWorkerClient, IDisposable
         FailInflight("Application is shutting down.");
     }
 
-    private async Task<JsonElement> SendAsync<TPayload>(string type, TPayload payload, int timeoutSeconds, CancellationToken cancellationToken)
+    private async Task<JsonElement> SendAsync<TPayload>(string type, TPayload payload, int timeoutSeconds, CancellationToken cancellationToken, Action<JsonElement> onProgress = null)
     {
         await _requestLock.WaitAsync(cancellationToken);
         try
@@ -105,7 +129,7 @@ public sealed class PythonWorkerClient : IModelWorkerClient, IDisposable
             await EnsureStartedAsync(cancellationToken);
 
             var process = _process;
-            var pending = new PendingRequest(Guid.NewGuid().ToString("N"));
+            var pending = new PendingRequest(Guid.NewGuid().ToString("N"), onProgress);
             lock (_sync)
             {
                 _inflight = pending;
@@ -138,9 +162,12 @@ public sealed class PythonWorkerClient : IModelWorkerClient, IDisposable
             }
             catch (OperationCanceledException)
             {
-                // Воркер усе ще виконує скасований запит — зупиняємо його, щоб відповідь не прийшла наступному запиту.
+                // Воркер усе ще виконує скасований запит (наприклад, користувач зупинив пошук) —
+                // зупиняємо процес, щоб відповідь не прийшла наступному запиту, і одразу перезапускаємо його.
                 ClearInflight(pending);
+                _intentionallyStopped = process;
                 KillProcess(process);
+                RestartInBackground();
                 throw;
             }
         }
@@ -211,7 +238,7 @@ public sealed class PythonWorkerClient : IModelWorkerClient, IDisposable
             _stderrTail.Clear();
         }
 
-        SetStatus(new WorkerStatus(WorkerState.Starting, $"Starting worker: {pythonPath} {scriptPath}"));
+        SetStatus(new WorkerStatus(WorkerState.Starting, "Starting Python", Progress: 2));
         Console.WriteLine($"[worker] Starting: \"{pythonPath}\" -u \"{scriptPath}\"");
 
         try
@@ -259,6 +286,13 @@ public sealed class PythonWorkerClient : IModelWorkerClient, IDisposable
         var reason = $"Worker process exited (code {exitCode}). {StderrTail()}";
         Console.WriteLine($"[worker] {reason}");
 
+        if (ReferenceEquals(_intentionallyStopped, process))
+        {
+            // Навмисна зупинка: статус уже "Restarting", поточний запит скасовано викликачем.
+            FailInflight("The request was cancelled.");
+            return;
+        }
+
         if (ReferenceEquals(_process, process))
         {
             // Не перетираємо більш інформативне повідомлення (fatal / timeout).
@@ -300,8 +334,37 @@ public sealed class PythonWorkerClient : IModelWorkerClient, IDisposable
                             WorkerState.Ready,
                             "Worker is ready.",
                             PythonVersion: GetString(root, "python"),
-                            TensorFlowVersion: GetString(root, "tensorflow")));
+                            TensorFlowVersion: GetString(root, "tensorflow"),
+                            Progress: 100));
                         ready.TrySetResult();
+                        break;
+
+                    case "startup":
+                        // Етапи імпорту бібліотек — для індикатора завантаження застосунку.
+                        if (_status.State is WorkerState.Starting or WorkerState.NotStarted)
+                        {
+                            SetStatus(new WorkerStatus(
+                                WorkerState.Starting,
+                                GetString(root, "stage") ?? "Starting",
+                                Progress: root.TryGetProperty("percent", out var percent) ? percent.GetInt32() : null));
+                        }
+                        break;
+
+                    case "progress":
+                        PendingRequest target;
+                        lock (_sync)
+                        {
+                            target = _inflight?.Id == GetString(root, "id") ? _inflight : null;
+                        }
+
+                        try
+                        {
+                            target?.OnProgress?.Invoke(root);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[worker] Progress handler failed: {ex.Message}");
+                        }
                         break;
 
                     case "fatal":
@@ -364,6 +427,35 @@ public sealed class PythonWorkerClient : IModelWorkerClient, IDisposable
     }
 
     private void SetStatus(WorkerStatus status) => _status = status;
+
+    private void RestartInBackground()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        SetStatus(new WorkerStatus(WorkerState.Starting, "Restarting the training engine", Progress: 0));
+
+        _ = Task.Run(async () =>
+        {
+            // Невелика пауза: якщо скасування спричинене закриттям застосунку, клієнт до цього часу вже звільнений.
+            await Task.Delay(TimeSpan.FromSeconds(1.5));
+            if (_disposed)
+            {
+                return;
+            }
+
+            try
+            {
+                await EnsureStartedAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[worker] Restart after cancellation failed: {ex.Message}");
+            }
+        });
+    }
 
     private void ClearInflight(PendingRequest pending)
     {
@@ -433,9 +525,15 @@ public sealed class PythonWorkerClient : IModelWorkerClient, IDisposable
 
     private sealed class PendingRequest
     {
-        public PendingRequest(string id) => Id = id;
+        public PendingRequest(string id, Action<JsonElement> onProgress = null)
+        {
+            Id = id;
+            OnProgress = onProgress;
+        }
 
         public string Id { get; }
+
+        public Action<JsonElement> OnProgress { get; }
 
         public TaskCompletionSource<JsonElement> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }

@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import { SessionStatusTag } from '../components/StatusTag'
 import DeleteSessionButton from '../components/DeleteSessionButton'
+import StopSearchButton from '../components/StopSearchButton'
 import useApiData from '../hooks/useApiData'
 import NotFoundPage from './NotFoundPage'
 import SetupTab from './session/SetupTab'
@@ -45,7 +46,12 @@ const SessionPage = () => {
         title={overview.name}
         tags={<SessionStatusTag status={overview.status} />}
         subtitle={overview.description}
-        actions={<DeleteSessionButton session={overview} onDeleted={() => navigate('/')} />}
+        actions={
+          <>
+            {overview.isRunning && <StopSearchButton sessionId={overview.id} onStopped={refresh} />}
+            <DeleteSessionButton session={overview} onDeleted={() => navigate('/')} />
+          </>
+        }
       />
 
       <Tabs
@@ -81,7 +87,7 @@ const SessionPage = () => {
                 )}
               </span>
             ),
-            children: <ResultsTab overview={overview} onGoToSetup={() => setTab('setup')} />
+            children: <ResultsTab overview={overview} onGoToSetup={() => setTab('setup')} onStopped={refresh} />
           }
         ]}
       />

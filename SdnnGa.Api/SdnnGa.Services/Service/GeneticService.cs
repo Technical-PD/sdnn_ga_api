@@ -1,6 +1,10 @@
 ﻿using SdnnGa.Model.Constants;
 using SdnnGa.Model.Core.Interfaces;
 using SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
+using SdnnGa.Model.Infrastructure.Interfaces.Training;
+using Quartz;
+using Quartz.Impl.Matchers;
+using System.Linq;
 using SdnnGa.Model.Infrastructure.Interfaces.Worker;
 using SdnnGa.Model.Models.Core.GAConfigs;
 using SdnnGa.Model.Services.Models.ServiceResult;
@@ -20,14 +24,29 @@ public class GeneticService : IGeneticService
     private readonly ISessionService _sessionService;
     private readonly IFitConfigService _fitConfigService;
     private readonly IGeneticConfigService _geneticConfigService;
+    private readonly ISchedulerService _schedulerService;
+    private readonly IGeneticFlowStopRegistry _stopRegistry;
+    private readonly ISessionOverviewService _sessionOverviewService;
+    private readonly IEpochService _epochService;
+    private readonly INeuralNetworkModelService _modelService;
 
     public GeneticService(
         IJobScheduler jobScheduler,
         IModelWorkerClient workerClient,
         ISessionService sessionService,
         IFitConfigService fitConfigService,
-        IGeneticConfigService geneticConfigService)
+        IGeneticConfigService geneticConfigService,
+        ISchedulerService schedulerService,
+        IGeneticFlowStopRegistry stopRegistry,
+        ISessionOverviewService sessionOverviewService,
+        IEpochService epochService,
+        INeuralNetworkModelService modelService)
     {
+        _schedulerService = schedulerService;
+        _stopRegistry = stopRegistry;
+        _sessionOverviewService = sessionOverviewService;
+        _epochService = epochService;
+        _modelService = modelService;
         _jobScheduler = jobScheduler;
         _workerClient = workerClient;
         _sessionService = sessionService;
@@ -49,6 +68,11 @@ public class GeneticService : IGeneticService
                 return ServiceResult.FromError(validationError);
             }
 
+            if (await _sessionOverviewService.IsRunningAsync(sessionId, cancellationToken))
+            {
+                return ServiceResult.FromError("The search is already running for this session.");
+            }
+
             try
             {
                 await _workerClient.EnsureStartedAsync(cancellationToken);
@@ -57,6 +81,9 @@ public class GeneticService : IGeneticService
             {
                 return ServiceResult.FromError($"The local training worker is not available: {ex.Message}");
             }
+
+            // Новий запуск після зупинки.
+            _stopRegistry.Clear(sessionId);
 
             string modelRangeConfigJson = JsonSerializer.Serialize(modelRangeConfig);
 
@@ -73,6 +100,73 @@ public class GeneticService : IGeneticService
         catch (Exception e)
         {
             return ServiceResult.FromUnexpectedError($"Unexpected error occured on starting GeneticFlow. Message: '{e.Message}'");
+        }
+    }
+
+    public async Task<ServiceResult> StopGeneticFlow(string sessionId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            return ServiceResult.FromError("Session id is required.");
+        }
+
+        try
+        {
+            // 1. Прапорець: GeneticEpochJob, CreateModelJob, FitModelJob і слухач перевіряють його.
+            _stopRegistry.RequestStop(sessionId);
+
+            var scheduler = await _schedulerService.GetSchedulerAsync();
+            var groupSuffix = $"-{sessionId}";
+
+            // 2. Скасовуємо джоби, що виконуються зараз (CancellationToken; воркер зупиняє поточне навчання).
+            foreach (var executing in await scheduler.GetCurrentlyExecutingJobs(cancellationToken))
+            {
+                if (executing.JobDetail.Key.Group.EndsWith(groupSuffix, StringComparison.Ordinal))
+                {
+                    await scheduler.Interrupt(executing.JobDetail.Key, cancellationToken);
+                }
+            }
+
+            // 3. Видаляємо ще не виконані джоби сесії.
+            foreach (var group in await scheduler.GetJobGroupNames(cancellationToken))
+            {
+                if (!group.EndsWith(groupSuffix, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                foreach (var jobKey in await scheduler.GetJobKeys(GroupMatcher<JobKey>.GroupEquals(group), cancellationToken))
+                {
+                    await scheduler.DeleteJob(jobKey, cancellationToken);
+                }
+            }
+
+            // 4. Слухачі завершення поколінь сесії більше не потрібні.
+            var epochs = await _epochService.GetAllBySessionIdAsync(sessionId, cancellationToken);
+            foreach (var epoch in epochs.Entity ?? Enumerable.Empty<Model.Models.Epoch>())
+            {
+                scheduler.ListenerManager.RemoveJobListener($"ParentJobCompletionListener-{epoch.Id}");
+            }
+
+            // 5. Моделі, що ще чекали на створення чи навчання, позначаємо як зупинені (навчені залишаються).
+            var stopped = 0;
+            foreach (var epoch in epochs.Entity ?? Enumerable.Empty<Model.Models.Epoch>())
+            {
+                var models = await _modelService.GetModelByEpochIdAsync(epoch.Id, false, cancellationToken);
+                foreach (var model in (models.Entity ?? new List<Model.Models.NeuralNetworkModel>()).Where(model => !model.IsTrained && model.FitError == null))
+                {
+                    model.FitError = ModelStatusMessages.StoppedByUser;
+                    await _modelService.UpdateModelAssync(model, cancellationToken);
+                    stopped++;
+                }
+            }
+
+            Console.WriteLine($"Genetic flow of session '{sessionId}' stopped by the user ({stopped} unfinished model(s) cancelled).");
+            return ServiceResult.FromSuccess();
+        }
+        catch (Exception ex)
+        {
+            return ServiceResult.FromUnexpectedError($"Unexpected error occured on stopping GeneticFlow. Message: '{ex.Message}'");
         }
     }
 

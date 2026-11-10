@@ -6,6 +6,7 @@ using SdnnGa.Core.Listeners;
 using SdnnGa.Model.Constants;
 using SdnnGa.Model.Core.Interfaces;
 using SdnnGa.Model.Infrastructure.Interfaces.Quartz.Scheduler;
+using SdnnGa.Model.Infrastructure.Interfaces.Training;
 using SdnnGa.Model.Models.Core.GAConfigs;
 using SdnnGa.Model.Models;
 using SdnnGa.Model.Services;
@@ -27,6 +28,7 @@ public class GeneticEpochJob : IGeneticEpochJob
     private readonly ISchedulerService _schedulerService;
     private readonly IGeneticConfigService _geneticConfigService;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IGeneticFlowStopRegistry _stopRegistry;
 
     private ModelRangeConfig _modelRangeConfig;
     private string _sessionId;
@@ -39,8 +41,10 @@ public class GeneticEpochJob : IGeneticEpochJob
         INeuralNetworkModelService networkModelService,
         ISchedulerService schedulerService,
         IGeneticConfigService geneticConfigService,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        IGeneticFlowStopRegistry stopRegistry)
     {
+        _stopRegistry = stopRegistry;
         _epochService = epochService;
         _sessionService = sessionService;
         _fitConfigService = fitConfigService;
@@ -55,7 +59,16 @@ public class GeneticEpochJob : IGeneticEpochJob
     {
         InizializeSettingValues(context);
 
+        if (_stopRegistry.IsStopRequested(_sessionId))
+        {
+            Console.WriteLine($"Genetic flow of session '{_sessionId}' was stopped: the next generation is not created.");
+            return;
+        }
+
         string modelConfigNetPath = string.Empty;
+        string secondParentConfigNetPath = string.Empty;
+        string operation = ModelOrigin.Random;
+        string parentModelNames = null;
 
         var sessionEpochesResult = await _epochService.GetAllBySessionIdAsync(_sessionId);
 
@@ -81,21 +94,54 @@ public class GeneticEpochJob : IGeneticEpochJob
             return;
         }
 
-        if (sessionEpochesResult.Entity != null && sessionEpochesResult.Entity.Any())
+        // Батьків беремо з останнього покоління, де є успішно навчені моделі
+        // (після зупинки чи збою в останньому поколінні може не бути жодної).
+        var (latestEpoch, parentCandidates) = await FindParentEpochAsync(sessionEpochesResult.Entity);
+
+        if (latestEpoch == null && sessionEpochesResult.Entity?.Any() == true)
         {
-            var latestEpoch = sessionEpochesResult.Entity.OrderBy(ep => ep.EpochNo).LastOrDefault();
-
-            var epocheModelResult = await _networkModelService.GetModelByEpochIdAsync(latestEpoch.Id);
-
-            if (epocheModelResult.IsError)
+            if (_modelRangeConfig == null)
             {
-                Console.WriteLine($"Error on obtaining models in Genetic Flow for session with id='{_sessionId}' and epochNo='{latestEpoch.EpochNo}'. Message: '{sessionEpochesResult.Message}'");
+                Console.WriteLine($"Session '{_sessionId}' has no trained models to breed from.");
                 return;
             }
 
-            NeuralNetworkModel bestModel = BestModelSelector.Select(epocheModelResult.Entity, currentGeneticConfig.SelectionCriterion);
+            Console.WriteLine($"Session '{_sessionId}' has no trained models yet: the new generation is generated randomly.");
+        }
 
-            modelConfigNetPath = bestModel?.ModelConfigDotNetFileName;
+        if (latestEpoch != null)
+        {
+
+            var strategy = currentGeneticConfig.EvolutionStrategy ?? EvolutionStrategy.Mutation;
+            NeuralNetworkModel firstParent;
+            NeuralNetworkModel secondParent = null;
+
+            if (EvolutionStrategy.UsesCrossover(strategy))
+            {
+                (firstParent, secondParent) = BestModelSelector.SelectPair(
+                    parentCandidates,
+                    currentGeneticConfig.FirstParentCriterion ?? SelectionCriterion.ByAccuracy,
+                    currentGeneticConfig.SecondParentCriterion ?? SelectionCriterion.ByLoss);
+
+                if (secondParent == null)
+                {
+                    // Для схрещування потрібно дві успішно навчені моделі.
+                    Console.WriteLine($"Epoch {latestEpoch.EpochNo} of session '{_sessionId}' has fewer than two trained models: falling back to mutation.");
+                    strategy = EvolutionStrategy.Mutation;
+                    firstParent = BestModelSelector.Select(parentCandidates, currentGeneticConfig.SelectionCriterion);
+                }
+            }
+            else
+            {
+                firstParent = BestModelSelector.Select(parentCandidates, currentGeneticConfig.SelectionCriterion);
+            }
+
+            modelConfigNetPath = firstParent?.ModelConfigDotNetFileName;
+            secondParentConfigNetPath = secondParent?.ModelConfigDotNetFileName ?? string.Empty;
+            operation = ModelOrigin.FromStrategy(strategy);
+            parentModelNames = secondParent == null ? firstParent?.Name : $"{firstParent.Name}, {secondParent.Name}";
+
+            Console.WriteLine($"Next generation of session '{_sessionId}': {operation} of {parentModelNames}.");
 
             if (string.IsNullOrEmpty(modelConfigNetPath))
             {
@@ -134,6 +180,12 @@ public class GeneticEpochJob : IGeneticEpochJob
 
         for (int i = 0; i < currentGeneticConfig.CountOfModelsInEpoch; i++)
         {
+            if (_stopRegistry.IsStopRequested(_sessionId))
+            {
+                Console.WriteLine($"Genetic flow of session '{_sessionId}' was stopped while generation was being created.");
+                break;
+            }
+
             string modelConfigJson = string.Empty;
 
             if (_modelRangeConfig != null) 
@@ -147,6 +199,8 @@ public class GeneticEpochJob : IGeneticEpochJob
                 EpocheId = currentEpochResult.Entity.Id,
                 IsTrained = false,
                 Name = $"Model_{currentEpochResult.Entity.EpochNo}_{i+1}",
+                Origin = operation,
+                ParentModelNames = parentModelNames,
             };
 
             var createdModelResult = await _networkModelService.CreateModelAsync(newModel);
@@ -162,7 +216,10 @@ public class GeneticEpochJob : IGeneticEpochJob
                 { JobSettings.CreateModel.CountOfInternalLayerMutationProbSettingName, currentGeneticConfig.CountOfInternalLayerMutationProb.ToString() },
                 { JobSettings.CreateModel.CountOfNeuronMutationProbSettingName, currentGeneticConfig.CountOfNeuronMutationProb.ToString() },
                 { JobSettings.CreateModel.BiasMutationProbSettingName, currentGeneticConfig.BiasMutationProb.ToString() },
-                { JobSettings.CreateModel.ModelNoSettingName, i.ToString() }
+                { JobSettings.CreateModel.ModelNoSettingName, i.ToString() },
+                { JobSettings.CreateModel.OperationSettingName, operation },
+                { JobSettings.CreateModel.SecondParentConfigNetPathSettingName, secondParentConfigNetPath },
+                { JobSettings.CreateModel.CrossoverMethodSettingName, currentGeneticConfig.CrossoverMethod ?? CrossoverMethod.SinglePoint },
             };
 
             var settingModelFitJob = new Dictionary<string, string>
@@ -256,6 +313,21 @@ public class GeneticEpochJob : IGeneticEpochJob
         scheduler.ListenerManager.AddJobListener(
             jobListener: listener,
             matchers: GroupMatcher<JobKey>.GroupEquals($"Epoche-{currentEpochResult.Entity.EpochNo}-{_sessionId}"));
+    }
+
+    private async Task<(Epoch Epoch, List<NeuralNetworkModel> Models)> FindParentEpochAsync(IEnumerable<Epoch> epochs)
+    {
+        foreach (var epoch in (epochs ?? Enumerable.Empty<Epoch>()).OrderByDescending(epoch => epoch.EpochNo))
+        {
+            var modelsResult = await _networkModelService.GetModelByEpochIdAsync(epoch.Id, useTracking: false);
+
+            if (!modelsResult.IsError && modelsResult.Entity.Any(model => model.IsTrained && model.FitError == null))
+            {
+                return (epoch, modelsResult.Entity);
+            }
+        }
+
+        return (null, null);
     }
 
     private void InizializeSettingValues(IJobExecutionContext context)

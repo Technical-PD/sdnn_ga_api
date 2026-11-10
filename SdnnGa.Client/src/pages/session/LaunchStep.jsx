@@ -5,7 +5,18 @@ import PropTypes from 'prop-types'
 import HelpLabel from '../../components/HelpLabel'
 import { useWorkerStatus } from '../../hooks/useWorkerStatus'
 import apiCall from '../../utils/apiCall'
-import { ACTIVATIONS, labelOf, LOSS_FUNCTIONS, OPTIMIZERS, SEARCH_DEFAULTS, SELECTION_CRITERIA } from '../../constants/options'
+import {
+  ACTIVATIONS,
+  CROSSOVER_METHODS,
+  EVOLUTION_STRATEGIES,
+  labelOf,
+  LOSS_FUNCTIONS,
+  OPTIMIZERS,
+  PARENT_CRITERIA,
+  SEARCH_DEFAULTS,
+  SELECTION_CRITERIA,
+  usesCrossover
+} from '../../constants/options'
 
 const storageKey = sessionId => `sdnnga.search.${sessionId}`
 
@@ -185,7 +196,26 @@ const LaunchStep = ({ overview, dataset, fitConfig, geneticConfig, disabled, onS
                 label: 'Evolution',
                 children: geneticConfig ? `${geneticConfig.maxEpoches} generations × ${geneticConfig.countOfModelsInEpoch} models` : '—'
               },
-              { key: 'selection', label: 'Parent', children: labelOf(SELECTION_CRITERIA, geneticConfig?.selectionCriterion) },
+              {
+                key: 'strategy',
+                label: 'Breeding',
+                children: geneticConfig
+                  ? labelOf(EVOLUTION_STRATEGIES, geneticConfig.evolutionStrategy ?? 'Mutation')
+                  : '—'
+              },
+              ...(usesCrossover(geneticConfig?.evolutionStrategy)
+                ? [
+                    {
+                      key: 'parents',
+                      label: 'Parents',
+                      children: `${labelOf(PARENT_CRITERIA, geneticConfig.firstParentCriterion)} × ${labelOf(
+                        PARENT_CRITERIA,
+                        geneticConfig.secondParentCriterion
+                      )}, ${labelOf(CROSSOVER_METHODS, geneticConfig.crossoverMethod).toLowerCase()}`
+                    }
+                  ]
+                : []),
+              { key: 'selection', label: 'Best model', children: labelOf(SELECTION_CRITERIA, geneticConfig?.selectionCriterion) },
               {
                 key: 'stop',
                 label: 'Stop at',

@@ -43,10 +43,19 @@ def log(text):
     print(text, file=sys.stderr, flush=True)
 
 
+def startup(stage, percent):
+    """Етап запуску для індикатора завантаження в UI (імпорт TensorFlow займає більшу частину часу)."""
+    send({"type": "startup", "stage": stage, "percent": percent})
+
+
 try:
+    startup("Loading NumPy", 5)
     import numpy as np
+    startup("Loading pandas", 15)
     import pandas as pd
+    startup("Loading TensorFlow", 25)
     import tensorflow as tf
+    startup("Preparing Keras", 90)
     from tensorflow.keras.layers import Dense, Input
     from tensorflow.keras.models import Sequential
 except Exception as import_error:  # noqa: BLE001
@@ -96,6 +105,33 @@ def _to_builtin(value):
     return value
 
 
+# id запиту, що виконується зараз (воркер обробляє запити по одному) — для повідомлень про прогрес.
+_current_request_id = None
+
+
+class ProgressReporter(tf.keras.callbacks.Callback):
+    """Надсилає прогрес навчання після кожної епохи: {"type": "progress", "id", "epoch", "epochs", "logs"}."""
+
+    def __init__(self, total_epochs):
+        super().__init__()
+        self.total_epochs = total_epochs
+
+    def _report(self, epoch, logs):
+        send({
+            "type": "progress",
+            "id": _current_request_id,
+            "epoch": epoch,
+            "epochs": self.total_epochs,
+            "logs": _to_builtin(dict(logs or {})),
+        })
+
+    def on_train_begin(self, logs=None):
+        self._report(0, {})
+
+    def on_epoch_end(self, epoch, logs=None):
+        self._report(epoch + 1, logs)
+
+
 def fit_model(cfg):
     """FitModelJobConfig (.NET) -> {Loss, Accuracy, History, Weights(base64)}."""
     x_all = pd.read_csv(io.StringIO(cfg["XTrain"]), header=0).values.astype(float)
@@ -119,7 +155,7 @@ def fit_model(cfg):
         train_x, val_x = x_data[:split_index], x_data[split_index:]
         train_y, val_y = y_data[:split_index], y_data[split_index:]
 
-    callbacks = []
+    callbacks = [ProgressReporter(cfg["Epochs"])]
     if cfg["UseEarlyStopping"]:
         callbacks.append(tf.keras.callbacks.EarlyStopping(
             min_delta=cfg["MinDelta"],
@@ -174,6 +210,7 @@ HANDLERS = {
 
 
 def main():
+    global _current_request_id
     send({"type": "ready", "tensorflow": tf.__version__, "python": sys.version.split()[0]})
     log(f"[worker] ready (TensorFlow {tf.__version__})")
 
@@ -191,6 +228,7 @@ def main():
             if handler is None:
                 raise ValueError(f"Unknown request type: {request.get('type')!r}")
             log(f"[worker] {request['type']} {request_id}")
+            _current_request_id = request_id
             send({"id": request_id, "ok": True, "result": handler(request.get("payload"))})
         except Exception as error:  # noqa: BLE001
             traceback.print_exc(file=sys.stderr)

@@ -4,6 +4,7 @@ import SessionsPage from './pages/SessionsPage'
 import SessionPage from './pages/SessionPage'
 import EpochPage from './pages/EpochPage'
 import NotFoundPage from './pages/NotFoundPage'
+import StartupScreen from './components/StartupScreen'
 import { WorkerStatusProvider } from './hooks/useWorkerStatus'
 
 const router = createBrowserRouter([
@@ -20,7 +21,9 @@ const router = createBrowserRouter([
 
 const App = () => (
   <WorkerStatusProvider>
-    <RouterProvider router={router} />
+    <StartupScreen>
+      <RouterProvider router={router} />
+    </StartupScreen>
   </WorkerStatusProvider>
 )
 

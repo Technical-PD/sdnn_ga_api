@@ -14,6 +14,9 @@ public static class JobSettings
         public const string CountOfInternalLayerMutationProbSettingName = "count-of-internal-layers-mutation-prob";
         public const string BiasMutationProbSettingName = "bias-mutation-prob";
         public const string ModelNoSettingName = "modelNo";
+        public const string OperationSettingName = "operation";
+        public const string SecondParentConfigNetPathSettingName = "second-parent-dotnet-path";
+        public const string CrossoverMethodSettingName = "crossover-method";
     }
 
     public static class FitModel

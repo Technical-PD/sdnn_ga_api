@@ -1,12 +1,14 @@
 import { Line } from '@ant-design/charts'
 import { Empty } from 'antd'
 import PropTypes from 'prop-types'
+import { useThemeMode } from '../hooks/useThemeMode'
 
 /**
  * Лінійний графік кількох серій.
  * series: [{ name, values: number[] }]; по осі X — номер точки (з `startAt`).
  */
 const MetricsChart = ({ series, xLabel, yFormatter, height = 220, startAt = 1, colors }) => {
+  const { isDark } = useThemeMode()
   const data = series.flatMap(({ name, values }) =>
     (values || [])
       .map((value, index) => ({ x: index + startAt, value, series: name }))
@@ -29,6 +31,8 @@ const MetricsChart = ({ series, xLabel, yFormatter, height = 220, startAt = 1, c
       colorField="series"
       height={height}
       autoFit
+      // Темна тема G2 з прозорим тлом, щоб графік зливався з карткою.
+      theme={{ type: isDark ? 'classicDark' : 'classic', view: { viewFill: 'transparent' } }}
       scale={{ color: colors ? { range: colors } : undefined }}
       axis={{
         // Номери епох/поколінь — цілі числа, дробові поділки ховаємо.

@@ -4,9 +4,92 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SdnnGA</title>
+    <title>SDNN-GA</title>
+    <script>
+      // Вмикаємо темну тему ще до завантаження React, щоб не було білого спалаху (ключ — як у useThemeMode).
+      ;(function () {
+        var mode = 'system'
+        try {
+          mode = localStorage.getItem('sdnnga.theme') || 'system'
+        } catch (e) {}
+        var dark = mode === 'dark' || (mode === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        if (dark) {
+          document.documentElement.classList.add('dark')
+          document.documentElement.style.colorScheme = 'dark'
+        }
+      })()
+    </script>
+    <style>
+      /* Заставка, поки завантажується JavaScript-бандл (далі її замінює StartupScreen). */
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f4f5fa;
+        font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+        color: #0f172a;
+      }
+      .dark #boot-splash {
+        background: #0b0f17;
+        color: #e2e8f0;
+      }
+      #boot-splash .card {
+        width: 360px;
+        text-align: center;
+      }
+      #boot-splash .logo {
+        width: 52px;
+        height: 52px;
+        margin: 0 auto 14px;
+        border-radius: 14px;
+        background: #4f46e5;
+      }
+      #boot-splash .title {
+        font-size: 20px;
+        font-weight: 600;
+      }
+      #boot-splash .hint {
+        margin-top: 4px;
+        font-size: 13px;
+        opacity: 0.6;
+      }
+      #boot-splash .bar {
+        position: relative;
+        height: 6px;
+        margin-top: 22px;
+        overflow: hidden;
+        border-radius: 3px;
+        background: rgba(99, 102, 241, 0.18);
+      }
+      #boot-splash .bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -40%;
+        width: 40%;
+        border-radius: 3px;
+        background: #6366f1;
+        animation: boot-slide 1.1s ease-in-out infinite;
+      }
+      @keyframes boot-slide {
+        to {
+          left: 100%;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-splash">
+      <div class="card">
+        <div class="logo"></div>
+        <div class="title">SDNN-GA</div>
+        <div class="hint">Loading the interface…</div>
+        <div class="bar"></div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
